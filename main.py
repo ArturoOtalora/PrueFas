@@ -36,7 +36,7 @@ import tiktoken
 from dotenv import load_dotenv
 from openai import OpenAI
 import logging
-from flask import current_app
+
 
 # Configurar la conexión a MySQL desde Railway
 DB_HOST = "shuttle.proxy.rlwy.net"
@@ -4003,7 +4003,6 @@ def generar_graficos_por_categoria(valores_respuestas):
     plt.close()
 
 def generar_graficos_interactivos(valores_respuestas,usuario_id):
-   
     categorias = ["Ambiental", "Vital", "Emocional", "Mental", "Existencial", "Financiera"]
     dimensiones = {
         "Vital": ["Alimentación", "Descanso", "Ejercicio", "Hábitos Saludables", "Salud Vital Corporal"],
@@ -4067,10 +4066,6 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
     text_color = '#333333'
     bg_color = 'rgba(245, 248, 250, 0.8)'
     
-    static_path = "statics"
-    user_static_path = os.path.join(static_path, f'user_{usuario_id}')
-    os.makedirs(user_static_path, exist_ok=True)
-
     # Generate individual radar charts for each category
     individual_charts = []
     inicio = 0
@@ -4157,12 +4152,9 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
         )
         
         # Save as HTML
-        chart_filename = f"radar_{categoria.lower()}.html"
-        chart_filepath = os.path.join(user_static_path, chart_filename)
-        fig.write_html(chart_filepath, full_html=False, include_plotlyjs='cdn')
-        
-        # Guardar la ruta para usar en el dashboard
-        individual_charts.append(f'statics/user_{usuario_id}/{chart_filename}')
+        filename = f"radar_{categoria.lower()}.html"
+        fig.write_html(filename, full_html=False, include_plotlyjs='cdn')
+        individual_charts.append(filename)
     
     # Generate consolidated radar chart with smaller size
     promedios_categorias = []
@@ -4240,16 +4232,12 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
      
     # Save consolidated chart
     consolidated_filename = "radar_general.html"
-    consolidated_filepath = os.path.join(user_static_path, consolidated_filename)
-    fig_consolidado.write_html(consolidated_filepath, full_html=False, include_plotlyjs='cdn')
+    fig_consolidado.write_html(consolidated_filename, full_html=False, include_plotlyjs='cdn')
     
-    consolidated_chart_path = f'statics/user_{usuario_id}/{consolidated_filename}'
-
+    # Generate dashboard (assuming this function exists)
+    generate_dashboard(individual_charts, consolidated_filename,usuario_id)
     
-    # Generar dashboard pasando las rutas correctas
-    dashboard_path = generate_dashboard(individual_charts, consolidated_chart_path, usuario_id)
-     
-    return individual_charts + [consolidated_chart_path, dashboard_path]
+    return individual_charts + [consolidated_filename]
 def obtener_imagen_categoria(categoria):
     """Devuelve URL de imagen representativa para cada categoría"""
     imagenes = {
@@ -4277,23 +4265,10 @@ def generate_dashboard(individual_charts, consolidated_chart,usuario_id):
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("OPENAI_API_KEY no está en .env")
-        return {
-            "api_key": api_key,
-            "model_name": "gpt-3.5-turbo",
-            "context_tokens": 4096,
-            "response_tokens": 500
-        }
+        return OpenAI(api_key=api_key)
 
-    # Inicialización del cliente
-    try:
-        config = configure_openai()
-        client = OpenAI(api_key=config["api_key"])
-        print("✅ OpenAI listo para dashboard")
-    except Exception as e:
-        print(f"❌ Error configurando OpenAI para dashboard: {str(e)}")
-        client = None
-      
-
+    # Crear cliente de OpenAI
+    client = configure_openai()    
     def get_chatgpt_interpretation(category, score, dimensions, dimension_scores):
         """Obtiene interpretación de ChatGPT para una categoría usando la API v1.0.0+"""
         try:
@@ -4340,7 +4315,7 @@ def generate_dashboard(individual_charts, consolidated_chart,usuario_id):
     dimension_scores = {}
     
     for categoria in categorias:
-        chart_file = f"statics/user_{usuario_id}/radar_{categoria.lower()}.html"
+        chart_file = f"radar_{categoria.lower()}.html"
         if chart_file in individual_charts:
             with open(chart_file, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -4368,18 +4343,18 @@ def generate_dashboard(individual_charts, consolidated_chart,usuario_id):
     # Obtener interpretaciones de ChatGPT para cada categoría
     logging.info(f"Archivos recibidos en individual_charts: {individual_charts}")
     ai_interpretations = {}
-    for categoria in categorias:
-        if categoria in promedios and categoria in dimension_scores:
-          interpretation = get_chatgpt_interpretation(
-            categoria,
-            promedios[categoria],
-            dimensiones[categoria],
-            dimension_scores[categoria]
-         )
-          ai_interpretations[categoria] = interpretation or "Interpretación no disponible"
-        else:
-         logging.warning(f"No hay datos completos para la categoría {categoria}")
-         ai_interpretations[categoria] = "Datos no disponibles para esta categoría"
+    # for categoria in categorias:
+    #     if categoria in promedios and categoria in dimension_scores:
+    #       interpretation = get_chatgpt_interpretation(
+    #         categoria,
+    #         promedios[categoria],
+    #         dimensiones[categoria],
+    #         dimension_scores[categoria]
+    #      )
+    #       ai_interpretations[categoria] = interpretation or "Interpretación no disponible"
+    #     else:
+    #      logging.warning(f"No hay datos completos para la categoría {categoria}")
+    #      ai_interpretations[categoria] = "Datos no disponibles para esta categoría"
 
     # Datos de interpretación para los tooltips
     interpretaciones = {
@@ -4930,7 +4905,7 @@ def generate_dashboard(individual_charts, consolidated_chart,usuario_id):
     <div class="dashboard-grid">
       <div class="summary-card">
         <div class="chart-container consolidated">
-          <iframe src="/{consolidated_chart}" width="100%" height="100%"></iframe>
+          <iframe src="{consolidated_chart}" width="100%" height="100%"></iframe>
         </div>
         <h2>Resumen General</h2>
         <div class="progress-container">
@@ -5007,7 +4982,6 @@ def generate_dashboard(individual_charts, consolidated_chart,usuario_id):
     
     function showModal(category) {{
       // Actualizar el contenido del modal según la categoría seleccionada
-      document.getElementById('modalChart').src = "/statics/user_{usuario_id}/radar_" + category.toLowerCase() + ".html";
       document.getElementById('modalTitle').textContent = category.toUpperCase();
       document.getElementById('modalEvaluation').textContent = {json.dumps(promedios)}[category].toFixed(1);
       document.getElementById('modalDescription').textContent = {json.dumps(interpretaciones)}[category];
@@ -5016,6 +4990,7 @@ def generate_dashboard(individual_charts, consolidated_chart,usuario_id):
       const interpretation = aiInterpretations[category] || "Interpretación no disponible en este momento.";
       document.getElementById('modalInterpretation').textContent = interpretation;
       
+      document.getElementById('modalChart').src = "radar_" + category.toLowerCase() + ".html";
       
       // Recomendaciones basadas en el puntaje
       const score = {json.dumps(promedios)}[category];
@@ -5053,59 +5028,22 @@ def generate_dashboard(individual_charts, consolidated_chart,usuario_id):
 </body>
 </html>
     """
-    dashboard_filename = "dashboard_bienestar.html"
-    dashboard_path = os.path.join("statics", f"user_{usuario_id}", dashboard_filename)
-    with open(dashboard_path, "w", encoding="utf-8") as f:
-      f.write(html_template)
+    with open("dashboard_bienestar.html", "w", encoding="utf-8") as f:
+        f.write(html_template)
 
-    return f"statics/user_{usuario_id}/{dashboard_filename}"
+    file_path = os.path.abspath("dashboard_bienestar.html")
+    webbrowser.open_new_tab(f"file://{file_path}")
 
-@app.get("/dashboard-content/{usuario_id}", response_class=HTMLResponse)
-async def get_dashboard_content(usuario_id: str):
-    dashboard_path = f"statics/user_{usuario_id}/dashboard_bienestar.html"
-    
-    if not os.path.exists(dashboard_path):
-        raise HTTPException(status_code=404, detail="Dashboard no encontrado")
-    
-    with open(dashboard_path, "r", encoding="utf-8") as f:
-        content = f.read()
-    
-    return HTMLResponse(content=content)
-
-@app.post("/generar-informe/{usuario_id}")
-async def generar_informe(usuario_id: str, respuestas: List[int]):
-    # Generar gráficos y dashboard
-    rutas_archivos = generar_graficos_interactivos(respuestas, usuario_id)
-    
-    # La última ruta es el dashboard
-    dashboard_path = rutas_archivos[-1]
-    
-    # Retornar URL para acceder al dashboard
-    return {
-        "dashboard_url": f"/dashboard/{usuario_id}",
-        "archivos_generados": rutas_archivos
-    }
-
-@app.get("/dashboard/{usuario_id}")
-async def get_dashboard(usuario_id: str):
-    dashboard_path = f"statics/user_{usuario_id}/dashboard_bienestar.html"
-    
-    if not os.path.exists(dashboard_path):
-        raise HTTPException(status_code=404, detail="Dashboard no encontrado")
-    
-    return FileResponse(dashboard_path)
-
-@app.get("/dashboard-content/{usuario_id}", response_class=HTMLResponse)
-async def get_dashboard_content(usuario_id: str):
-    dashboard_path = f"statics/user_{usuario_id}/dashboard_bienestar.html"
-    
-    if not os.path.exists(dashboard_path):
-        raise HTTPException(status_code=404, detail="Dashboard no encontrado")
-    
-    with open(dashboard_path, "r", encoding="utf-8") as f:
-        content = f.read()
-    
-    return HTMLResponse(content=content)
+@app.get("/descargar-dashboard/{usuario_id}")
+def descargar_dashboard(usuario_id: str):
+    file_path = os.path.abspath("dashboard_bienestar.html")
+    if not os.path.exists(file_path):
+        return {"error": "El dashboard no existe, primero ejecútalo."}
+    return FileResponse(
+        path=file_path,
+        filename=f"dashboard_bienestar_{usuario_id}.html",
+        media_type="text/html"
+    )
 
 def generar_graficos_por_categoria_Premium(valores_respuestas):
         matplotlib.use('Agg') 
@@ -6759,7 +6697,7 @@ async def guardar_respuestas_Premium(request: Request, usuario_id: int = Form(..
             else:
                 ruta_descarga = f"/descargar_pdf?usuario_id={usuario_id}"
             contenido_html = f"""
-             <html>
+            <html>
             <head>
                 <title>¡Buen trabajo!</title>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -6767,64 +6705,49 @@ async def guardar_respuestas_Premium(request: Request, usuario_id: int = Form(..
                 <style>
                     body {{
                         font-family: 'Roboto', sans-serif;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        min-height: 100vh;
-                        margin: 0;
-                        background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+                        text-align: center;
+                        padding: 50px;
+                        background-color: #f4f4f4;
                     }}
                     .container {{
                         background: white;
-                        padding: 40px 30px;
-                        border-radius: 16px;
-                        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.15);
+                        padding: 30px;
+                        border-radius: 12px;
+                        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+                        display: inline-block;
                         max-width: 500px;
-                        width: 90%;
-                        text-align: center;
-                        animation: fadeIn 0.8s ease-in-out;
                     }}
                     h1 {{
-                        color: #222;
-                        margin-bottom: 15px;
-                        font-size: 28px;
+                        color: #333;
                     }}
                     p {{
                         font-size: 18px;
-                        color: #555;
-                        margin-bottom: 25px;
+                        color: #666;
                     }}
                     button {{
                         background-color: #007bff;
                         color: white;
                         border: none;
-                        padding: 14px 28px;
-                        font-size: 17px;
-                        border-radius: 10px;
+                        padding: 15px 25px;
+                        font-size: 18px;
+                        border-radius: 8px;
                         cursor: pointer;
-                        margin: 10px 5px;
-                        transition: transform 0.2s, background 0.3s;
+                        margin-top: 20px;
+                        transition: background 0.3s ease-in-out;
                     }}
                     button:hover {{
                         background-color: #0056b3;
-                        transform: translateY(-2px);
-                    }}
-                    button:active {{
-                        transform: scale(0.97);
-                    }}
-                    @keyframes fadeIn {{
-                        from {{ opacity: 0; transform: translateY(-20px); }}
-                        to {{ opacity: 1; transform: translateY(0); }}
                     }}
                 </style>
             </head>
             <body>
-                <div class="container">
+                 <div class="container">
                     <h1>¡Gracias por tu tiempo!</h1>
-                    <p>Haz clic en el botón para continuar:</p>
-                    <button onclick="window.location.href='{ruta_descarga}'">📥 Generar Reporte Interactivo y Descargar Análisis</button>
-                    <button onclick="window.location.href='/chat'">💬 Ingresar a Chat</button>
+                    <p>Haz clic en el botón para generar y descargar tu análisis de respuestas:</p>
+                        <button onclick="window.location.href='{ruta_descarga}'">Generar y Descargar Análisis</button>
                 </div>
+                </div>
+               
             </body>
             </html>
             """
@@ -6858,12 +6781,12 @@ async def descargar_pdf_Premium(usuario_id: int):
 
     try:
         await aiosmtplib.send(
-             message,
-             hostname="smtp.gmail.com",
-             port=587,
-             start_tls=True,
-             username="correopruebavital@gmail.com",
-             password="olxh cdfd lsmo skcz"
+            #  message,
+            #  hostname="smtp.gmail.com",
+            #  port=587,
+            #  start_tls=True,
+            #  username="correopruebavital@gmail.com",
+            #  password="cxvi hyne temx xmgt"
         )
     except Exception as e:
         print(f"Error al enviar el correo: {e}")
@@ -6890,12 +6813,12 @@ async def descargar_pdf(usuario_id: int):
 
     try:
         await aiosmtplib.send(
-             message,
-             hostname="smtp.gmail.com",
-             port=587,
-             start_tls=True,
-             username="correopruebavital@gmail.com",
-             password="olxh cdfd lsmo skcz"
+            #  message,
+            #  hostname="smtp.gmail.com",
+            #  port=587,
+            #  start_tls=True,
+            #  username="correopruebavital@gmail.com",
+            #  password="cxvi hyne temx xmgt"
         )
     except Exception as e:
         print(f"Error al enviar el correo: {e}")
@@ -6924,12 +6847,12 @@ async def enviar_pdf_email(usuario_id: int = Form(...), correo_destino: str = Fo
     # Envía el correo
     try:
         await aiosmtplib.send(
-           message,
-           hostname="smtp.gmail.com",
-            port=587,
-           start_tls=True,
-            username="correopruebavital@gmail.com",
-           password="olxh cdfd lsmo skcz"
+        #    message,
+        #    hostname="smtp.gmail.com",
+        #     port=587,
+        #    start_tls=True,
+        #     username="correopruebavital@gmail.com",
+        #    password="cxvi hyne temx xmgt"
         )
         return {"mensaje": f"PDF enviado a {correo_destino} correctamente."}
     except Exception as e:
