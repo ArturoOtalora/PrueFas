@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+pyodbc
+python-multipart
+mysql-connector-python
+reportlab
+numpy
+matplotlib
+pandas
+aiosmtplib
+plotly
+openai
+tiktoken
+dotenv
+Flask

@@ -1,0 +1,322 @@
+
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Dashboard de Bienestar Integral</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f8f9fa;
+            }
+            .header {
+                background: linear-gradient(135deg, #2E8B57, #3CB371);
+                color: white;
+                padding: 25px;
+                text-align: center;
+                border-radius: 10px;
+                margin-bottom: 30px;
+                box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+                position: relative;
+                overflow: hidden;
+            }
+            .header::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path fill="rgba(255,255,255,0.1)" d="M0,0 L100,0 L100,100 L0,100 Z" /></svg>');
+                opacity: 0.1;
+            }
+            .chart-container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 25px;
+            }
+            .chart-box {
+                background-color: white;
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                padding: 20px;
+                width: calc(50% - 40px);
+                min-width: 500px;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+            }
+            .chart-box:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+            }
+            .chart-title {
+                text-align: center;
+                margin-bottom: 15px;
+                color: #2F4F4F;
+                font-size: 1.3em;
+                position: relative;
+                display: inline-block;
+            }
+            .chart-title::after {
+                content: '';
+                position: absolute;
+                bottom: -5px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 50px;
+                height: 3px;
+                background: #3CB371;
+                transition: width 0.3s;
+            }
+            .chart-title:hover::after {
+                width: 100%;
+            }
+            .consolidated {
+                width: 85%;
+                margin: 30px auto;
+            }
+            iframe {
+                width: 100%;
+                height: 600px;
+                border: none;
+                border-radius: 8px;
+                transition: all 0.3s;
+            }
+            iframe:hover {
+                box-shadow: 0 0 0 2px rgba(46, 139, 87, 0.3);
+            }
+            .tabs {
+                display: flex;
+                justify-content: center;
+                margin-bottom: 25px;
+                flex-wrap: wrap;
+            }
+            .tab {
+                padding: 12px 25px;
+                background-color: #e9ecef;
+                cursor: pointer;
+                border-radius: 30px;
+                margin: 0 8px 10px;
+                transition: all 0.3s;
+                font-weight: 500;
+                position: relative;
+            }
+            .tab:hover {
+                background-color: #d1e7dd;
+                color: #0a3622;
+            }
+            .tab.active {
+                background: linear-gradient(135deg, #2E8B57, #3CB371);
+                color: white;
+                box-shadow: 0 4px 8px rgba(46, 139, 87, 0.3);
+            }
+            .tab-content {
+                display: none;
+                animation: fadeIn 0.5s;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            .tab-content.active {
+                display: block;
+            }
+            /* Tooltip styles */
+            .tooltip {
+                position: relative;
+                display: inline-block;
+            }
+            .tooltip .tooltiptext {
+                 visibility: hidden;
+                width: 180px;
+                background-color: #333;
+                color: #fff;
+                text-align: center;
+                border-radius: 6px;
+                padding: 8px;
+                position: absolute;
+                z-index: 1;
+                bottom: 125%;
+                left: 50%;
+                transform: translateX(-50%);
+                opacity: 0;
+                transition: opacity 0.3s;
+                font-size: 0.8em;  /* Tamaño más pequeño */
+                font-weight: normal;
+            }
+            .tooltip .tooltiptext::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                margin-left: -5px;
+                border-width: 5px;
+                border-style: solid;
+                border-color: #333 transparent transparent transparent;
+            }
+            .tooltip:hover .tooltiptext {
+                visibility: visible;
+                opacity: 1;
+            }
+            /* Info icon */
+            .info-icon {
+                margin-left: 6px;
+                color: #6c757d;
+                cursor: help;
+                font-size: 0.65em; /* Más pequeño */
+                vertical-align: middle; /* Alinea con el texto */
+                transition: color 0.3s;
+            }
+            .info-icon:hover {
+                color: #2E8B57;
+            }
+            /* Responsive design */
+            @media (max-width: 768px) {
+                .chart-box {
+                    width: 100%;
+                    min-width: auto;
+                }
+                .consolidated {
+                    width: 95%;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1><i class="fas fa-chart-pie"></i> Dashboard de Bienestar Integral</h1>
+            <p>Visualización de tu perfil de bienestar</p>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('general')">
+                <i class="fas fa-globe"></i> Vista General
+            </div>
+            <div class="tab" onclick="showTab('individual')">
+                <i class="fas fa-layer-group"></i> Vista por Categoría
+            </div>
+        </div>
+        
+        <div id="general" class="tab-content active">
+            <div class="chart-box consolidated">
+                <h2 class="chart-title">
+                    Perfil General
+                    <span class="tooltip">
+                        <i class="fas fa-info-circle info-icon"></i>
+                        <span class="tooltiptext">Esta vista muestra un resumen consolidado de todas tus áreas de bienestar</span>
+                    </span>
+                </h2>
+                <iframe src="radar_general.html"></iframe>
+            </div>
+        </div>
+        
+        <div id="individual" class="tab-content">
+            <div class="chart-container">
+                
+                <div class="chart-box">
+                    <h3 class="chart-title">
+                        Ambiental
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle info-icon"></i>
+                            <span class="tooltiptext">Cómo interactúas con tu entorno físico y espacios vitales</span>
+                        </span>
+                    </h3>
+                    <iframe src="radar_ambiental.html"></iframe>
+                </div>
+                
+                <div class="chart-box">
+                    <h3 class="chart-title">
+                        Vital
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle info-icon"></i>
+                            <span class="tooltiptext">Estado de tu salud física y hábitos de vida</span>
+                        </span>
+                    </h3>
+                    <iframe src="radar_vital.html"></iframe>
+                </div>
+                
+                <div class="chart-box">
+                    <h3 class="chart-title">
+                        Emocional
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle info-icon"></i>
+                            <span class="tooltiptext">Gestión de tus emociones y bienestar psicológico</span>
+                        </span>
+                    </h3>
+                    <iframe src="radar_emocional.html"></iframe>
+                </div>
+                
+                <div class="chart-box">
+                    <h3 class="chart-title">
+                        Mental
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle info-icon"></i>
+                            <span class="tooltiptext">Estado cognitivo y manejo de pensamientos</span>
+                        </span>
+                    </h3>
+                    <iframe src="radar_mental.html"></iframe>
+                </div>
+                
+                <div class="chart-box">
+                    <h3 class="chart-title">
+                        Existencial
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle info-icon"></i>
+                            <span class="tooltiptext">Sentido de propósito y autoconocimiento profundo</span>
+                        </span>
+                    </h3>
+                    <iframe src="radar_existencial.html"></iframe>
+                </div>
+                
+                <div class="chart-box">
+                    <h3 class="chart-title">
+                        Financiera
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle info-icon"></i>
+                            <span class="tooltiptext">Relación con el dinero y seguridad económica</span>
+                        </span>
+                    </h3>
+                    <iframe src="radar_financiera.html"></iframe>
+                </div>
+                
+            </div>
+        </div>
+        
+        <script>
+            function showTab(tabId) {
+                // Hide all tab contents
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                // Show selected tab content
+                document.getElementById(tabId).classList.add('active');
+                
+                // Update tab styles
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                event.currentTarget.classList.add('active');
+            }
+
+            // Efecto adicional al pasar el mouse sobre los gráficos
+            document.querySelectorAll('.chart-box').forEach(box => {
+                box.addEventListener('mouseenter', function() {
+                    this.querySelector('iframe').style.transform = 'scale(1.01)';
+                });
+                box.addEventListener('mouseleave', function() {
+                    this.querySelector('iframe').style.transform = 'scale(1)';
+                });
+            });
+        </script>
+    </body>
+    </html>
+    
