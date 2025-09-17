@@ -511,43 +511,18 @@ def verificar_usuario(
     
     if usuario:
         user_type = request.cookies.get("user_type", "invitado")
-        usuario_id = numero_identificacion
-        
+
         if user_type in ["Corevital", "AdvanceVital", "premiumVital"]:
-            version_options = f"""
+            version_options = """
             <button onclick="window.location.href='/chat'" class="btn-option">
-                <div class="btn-icon">
-                    <i class="fas fa-comments"></i>
-                </div>
-                <div class="btn-content">
-                    <span class="btn-title">Chat Interactivo</span>
-                    <span class="btn-desc">¿Listo para iniciar tu proceso de transformación? Hablemos.</span>
-                </div>
-                <div class="btn-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </button>
-            
-            <button onclick="window.location.href='/dashboard-content/{usuario.get("id", numero_identificacion)}'" class="btn-option">
-                <div class="btn-icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="btn-content">
-                    <span class="btn-title">Visualizar Reporte Interactivo</span>
-                    <span class="btn-desc">Accede a análisis detallados y métricas personalizadas de tu progreso.</span>
-                </div>
-                <div class="btn-arrow">
-                    <i class="fas fa-chevron-right"></i>
+                <div>
+                    <strong>💬 Chat Interactivo</strong><br>
+                    <span>¿Listo para iniciar tu proceso de transformación? Hablemos.</span>
                 </div>
             </button>
             """
         else:
-            version_options = """
-            <div class="access-denied">
-                <i class="fas fa-exclamation-circle"></i>
-                <span>No tienes acceso a las versiones especiales de VitalApp</span>
-            </div>
-            """
+            version_options = "<p style='color:#e53e3e;'>⚠️ No tienes acceso a versiones especiales.</p>"
 
         return f"""
         <!DOCTYPE html>
@@ -555,248 +530,76 @@ def verificar_usuario(
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Bienvenido a VitalApp</title>
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+            <title>Bienvenido</title>
             <style>
-                :root {{
-                    --primary: #2f855a;
-                    --primary-light: #48bb78;
-                    --primary-dark: #276749;
-                    --secondary: #7dd3fc;
-                    --accent: #c3ecb2;
-                    --text: #2d3748;
-                    --text-light: #4a5568;
-                    --white: #ffffff;
-                    --gray-light: #f7fafc;
-                    --danger: #e53e3e;
-                    --shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-                    --transition: all 0.3s ease;
-                }}
-                
-                * {{
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                }}
-                
                 body {{
+                    margin: 0;
                     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+                    background: linear-gradient(135deg, #c3ecb2 0%, #7dd3fc 100%);
                     display: flex;
                     justify-content: center;
                     align-items: center;
-                    min-height: 100vh;
-                    padding: 20px;
+                    height: 100vh;
                 }}
-                
                 .card {{
-                    background: var(--white);
-                    padding: 2.5rem;
+                    background: white;
+                    padding: 2rem;
                     border-radius: 20px;
-                    box-shadow: var(--shadow);
+                    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
                     text-align: center;
-                    max-width: 550px;
+                    max-width: 500px;
                     width: 100%;
                     animation: fadeIn 0.8s ease-in-out;
                 }}
-                
-                .logo {{
-                    width: 80px;
-                    height: 80px;
-                    margin: 0 auto 1rem;
-                    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-size: 2.5rem;
-                }}
-                
                 h2 {{
-                    color: var(--primary);
-                    margin-bottom: 0.8rem;
-                    font-size: 1.8rem;
-                }}
-                
-                .user-info {{
-                    background-color: var(--gray-light);
-                    padding: 1.2rem;
-                    border-radius: 12px;
-                    margin: 1.2rem 0;
-                    text-align: left;
-                }}
-                
-                .info-row {{
-                    display: flex;
+                    color: #2f855a;
                     margin-bottom: 0.5rem;
                 }}
-                
-                .info-label {{
-                    font-weight: bold;
-                    color: var(--primary-dark);
-                    min-width: 100px;
+                p {{
+                    color: #4a5568;
+                    margin: 0.3rem 0;
                 }}
-                
-                .info-value {{
-                    color: var(--text-light);
-                }}
-                
                 h3 {{
-                    margin: 1.8rem 0 1.2rem;
-                    color: var(--text);
-                    font-size: 1.4rem;
-                    position: relative;
-                    display: inline-block;
-                }}
-                
-                h3:after {{
-                    content: '';
-                    position: absolute;
-                    width: 50%;
-                    height: 3px;
-                    background: linear-gradient(to right, transparent, var(--primary-light), transparent);
-                    bottom: -8px;
-                    left: 25%;
-                }}
-                
-                .options-container {{
-                    display: flex;
-                    flex-direction: column;
-                    gap: 1rem;
                     margin-top: 1.5rem;
+                    color: #2d3748;
                 }}
-                
                 .btn-option {{
-                    display: flex;
-                    align-items: center;
                     width: 100%;
-                    padding: 1.2rem 1.5rem;
+                    padding: 15px 20px;
+                    margin-top: 1rem;
                     border: none;
                     border-radius: 15px;
-                    background: var(--primary-light);
-                    color: var(--white);
-                    font-size: 1rem;
+                    background: #48bb78;
+                    color: white;
+                    font-size: 16px;
                     font-weight: bold;
                     text-align: left;
                     cursor: pointer;
-                    transition: var(--transition);
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                    position: relative;
-                    overflow: hidden;
+                    transition: transform 0.2s ease, background 0.3s ease;
+                    box-shadow: 0px 6px 12px rgba(0,0,0,0.1);
                 }}
-                
-                .btn-option:hover {{
-                    transform: translateY(-3px);
-                    background: var(--primary-dark);
-                    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-                }}
-                
-                .btn-option:active {{
-                    transform: translateY(0);
-                }}
-                
-                .btn-icon {{
-                    font-size: 1.8rem;
-                    margin-right: 1rem;
-                    flex-shrink: 0;
-                }}
-                
-                .btn-content {{
-                    flex-grow: 1;
-                }}
-                
-                .btn-title {{
-                    display: block;
-                    font-size: 1.1rem;
-                    margin-bottom: 0.3rem;
-                }}
-                
-                .btn-desc {{
-                    display: block;
-                    font-size: 0.9rem;
+                .btn-option span {{
+                    font-size: 14px;
                     font-weight: normal;
-                    opacity: 0.9;
+                    color: #e6fffa;
                 }}
-                
-                .btn-arrow {{
-                    font-size: 1.2rem;
-                    opacity: 0.8;
-                    transition: var(--transition);
+                .btn-option:hover {{
+                    transform: scale(1.03);
+                    background: #38a169;
                 }}
-                
-                .btn-option:hover .btn-arrow {{
-                    transform: translateX(4px);
-                }}
-                
-                .access-denied {{
-                    background-color: #fed7d7;
-                    color: var(--danger);
-                    padding: 1rem;
-                    border-radius: 12px;
-                    margin-top: 1.5rem;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 0.8rem;
-                }}
-                
                 @keyframes fadeIn {{
-                    from {{ 
-                        opacity: 0; 
-                        transform: translateY(-15px); 
-                    }}
-                    to {{ 
-                        opacity: 1; 
-                        transform: translateY(0); 
-                    }}
-                }}
-                
-                /* Responsive */
-                @media (max-width: 600px) {{
-                    .card {{
-                        padding: 1.8rem;
-                    }}
-                    
-                    .btn-option {{
-                        padding: 1rem;
-                    }}
-                    
-                    .btn-icon {{
-                        font-size: 1.5rem;
-                        margin-right: 0.8rem;
-                    }}
+                    from {{ opacity: 0; transform: translateY(-15px); }}
+                    to {{ opacity: 1; transform: translateY(0); }}
                 }}
             </style>
         </head>
         <body>
             <div class="card">
-                <div class="logo">
-                    <i class="fas fa-heartbeat"></i>
-                </div>
-                
-                <h2>¡Bienvenido, {usuario['nombre']} {usuario['apellidos']}!</h2>
-                
-                <div class="user-info">
-                    <div class="info-row">
-                        <span class="info-label">Correo:</span>
-                        <span class="info-value">{usuario['correo']}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Ciudad:</span>
-                        <span class="info-value">{usuario['ciudad']}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Documento:</span>
-                        <span class="info-value">{tipo_documento}: {numero_identificacion}</span>
-                    </div>
-                </div>
-                
-                <h3>Selecciona una opción</h3>
-                
-                <div class="options-container">
-                    {version_options}
-                </div>
+                <h2>🌿 Bienvenido, {usuario['nombre']} {usuario['apellidos']}</h2>
+                <p><strong>Correo:</strong> {usuario['correo']}</p>
+                <p><strong>Ciudad:</strong> {usuario['ciudad']}</p>
+                <h3>Selecciona tu versión</h3>
+                {version_options}
             </div>
         </body>
         </html>
@@ -838,7 +641,6 @@ def mostrar_pagina(request: Request):  # Añadir el parámetro request
                 <span style="font-size: 14px; color: #388E3C;">¿listo para iniciar tu proceso de transformación? Hablemos.</span>
             </div>
         </button>
-
         """
     elif user_type == "premiumVital":
         version_options = """
@@ -1025,8 +827,6 @@ def mostrar_pagina(request: Request):  # Añadir el parámetro request
                         <select id="grado_escolaridad" name="grado_escolaridad" required>
                             <option value="Basica Primaria">Básica Primaria</option>
                             <option value="Bachiller">Bachiller</option>
-                            <option value="Bachiller">Tecnico</option>
-                            <option value="Bachiller">Tecnologo</option>
                             <option value="Pregado">Pregrado</option>
                             <option value="Posgrado">Posgrado</option>
                             <option value="Doctorado">Doctorado</option>
@@ -1057,7 +857,6 @@ def mostrar_pagina(request: Request):  # Añadir el parámetro request
                             <option value="AZISTIA">AZISTIA</option>
                             <option value="HOTEL SONATA 44">HOTEL SONATA 44</option>
                             <option value="PTC-ASSISTAN">PTC-AZISTIA</option>
-                            <option value="PTC-ASSISTAN">ENVIGADO</option>
                             <option value="Otra Empresa">Otra Empresa</option>
                         </select>
                     </div>
@@ -1276,11 +1075,6 @@ async def chat_with_gpt(request: Request):
         user_messages = data.get("messages", [])
         emotion = data.get("emotion", None)
 
-        if len(user_messages) >= 30:  # 15 interacciones * 2 (user + assistant)
-            raise HTTPException(
-                status_code=400,
-                detail="Has alcanzado el límite máximo de 15 interacciones."
-            )
         # Construir mensajes
         messages = [
             {"role": "system", "content": get_system_prompt(get_emotion_context(emotion))},
@@ -1320,7 +1114,7 @@ async def chat_with_gpt(request: Request):
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_interactivo():
     return """
-      <!DOCTYPE html>
+        <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -1526,131 +1320,106 @@ async def chat_interactivo():
         }
         
         /* Estilos para el avatar animado */
-        .avatar-container {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #f0f8ff;
-        }
+.avatar-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f8ff;
+}
 
-        .avatar-image {
-            width: 70%;
-            height: auto;
-            transition: all 0.3s ease;
-            filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.2));
-        }
+.avatar-image {
+    width: 70%;
+    height: auto;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.2));
+}
 
-        /* Animaciones corregidas para el avatar */
-        .avatar-breathing {
-            animation: breathing 3s infinite ease-in-out;
-        }
+/* Animaciones corregidas para el avatar */
+.avatar-breathing {
+    animation: breathing 3s infinite ease-in-out;
+}
 
-        .avatar-listening {
-            animation: listening 1.2s infinite ease-in-out;
-        }
+.avatar-listening {
+    animation: listening 1.2s infinite ease-in-out;
+}
 
-        .avatar-speaking {
-            animation: speaking 0.7s infinite ease-in-out;
-        }
+.avatar-speaking {
+    animation: speaking 0.7s infinite ease-in-out;
+}
 
-        .avatar-blinking {
-            animation: blinking 5s infinite ease-in-out;
-        }
+.avatar-blinking {
+    animation: blinking 5s infinite ease-in-out;
+}
 
-        .avatar-idle {
-            animation: idleMovement 12s infinite ease-in-out;
-        }
+.avatar-idle {
+    animation: idleMovement 12s infinite ease-in-out;
+}
 
-        /* Definiciones de keyframes mejoradas */
-        @keyframes breathing {
-            0%, 100% { 
-                transform: scale(1); 
-            }
-            50% { 
-                transform: scale(1.05); 
-            }
-        }
+/* Definiciones de keyframes mejoradas */
+@keyframes breathing {
+    0%, 100% { 
+        transform: scale(1); 
+    }
+    50% { 
+        transform: scale(1.05); 
+    }
+}
 
-        @keyframes listening {
-            0%, 100% { 
-                transform: translateY(0); 
-            }
-            50% { 
-                transform: translateY(-8px); 
-            }
-        }
+@keyframes listening {
+    0%, 100% { 
+        transform: translateY(0); 
+    }
+    50% { 
+        transform: translateY(-8px); 
+    }
+}
 
-        @keyframes speaking {
-            0%, 100% { 
-                transform: scale(1); 
-                opacity: 1;
-            }
-            25% { 
-                transform: scale(1.08); 
-                opacity: 0.95;
-            }
-            50% { 
-                transform: scale(1); 
-                opacity: 1;
-            }
-            75% { 
-                transform: scale(1.05); 
-                opacity: 0.97;
-            }
-        }
+@keyframes speaking {
+    0%, 100% { 
+        transform: scale(1); 
+        opacity: 1;
+    }
+    25% { 
+        transform: scale(1.08); 
+        opacity: 0.95;
+    }
+    50% { 
+        transform: scale(1); 
+        opacity: 1;
+    }
+    75% { 
+        transform: scale(1.05); 
+        opacity: 0.97;
+    }
+}
 
-        @keyframes blinking {
-            0%, 88% { 
-                opacity: 1; 
-            }
-            90%, 92% { 
-                opacity: 0.3; 
-            }
-            94%, 100% { 
-                opacity: 1; 
-            }
-        }
+@keyframes blinking {
+    0%, 88% { 
+        opacity: 1; 
+    }
+    90%, 92% { 
+        opacity: 0.3; 
+    }
+    94%, 100% { 
+        opacity: 1; 
+    }
+}
 
-        @keyframes idleMovement {
-            0%, 100% { 
-                transform: translateX(0) rotate(0); 
-            }
-            33% { 
-                transform: translateX(3px) rotate(0.7deg); 
-            }
-            66% { 
-                transform: translateX(-3px) rotate(-0.7deg); 
-            }
-        }
-        
-        /* Estilos para el límite de interacciones */
-        .limit-reached {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            margin: 15px 0;
-        }
-        .interaction-counter {
-            position: absolute;
-            top: 10px;
-            right: 120px;
-            background-color: rgba(0,0,0,0.5);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            z-index: 10;
-        }
-        .disabled-chat {
-            opacity: 0.6;
-            pointer-events: none;
-        }
+@keyframes idleMovement {
+    0%, 100% { 
+        transform: translateX(0) rotate(0); 
+    }
+    33% { 
+        transform: translateX(3px) rotate(0.7deg); 
+    }
+    66% { 
+        transform: translateX(-3px) rotate(-0.7deg); 
+    }
+}
     </style>
 </head>
 <body>
@@ -1671,7 +1440,6 @@ async def chat_interactivo():
                     <div id="emotionProgress" class="emotion-progress hidden">Cargando modelos: 0%</div>
                     <div id="emotionHistory" class="emotion-history hidden"></div>
                     <div id="speechStatus" class="speech-recognition-status hidden">Escuchando...</div>
-                    <div id="interactionCounter" class="interaction-counter">Interacciones: 0/15</div>
                     <h6>Tu cámara</h6>
                     <div class="video-controls">
                         <button id="toggleVideo" class="btn btn-media btn-primary">
@@ -1702,7 +1470,7 @@ async def chat_interactivo():
         </div>
         
         <div class="chat-container">
-            <div class="chat-messages" id="chatContainer">
+            <div class="chat-messages">
                 <div class="chat-header">
                     Chat con CimaBot
                 </div>
@@ -1718,7 +1486,7 @@ async def chat_interactivo():
                         <div class="input-group">
                             <input type="text" class="form-control" id="messageInput" 
                                    placeholder="Escribe tu mensaje..." required>
-                            <button class="btn btn-primary" type="submit" id="sendButton">
+                            <button class="btn btn-primary" type="submit">
                                 <i class="bi bi-send"></i>
                             </button>
                         </div>
@@ -1749,8 +1517,6 @@ async def chat_interactivo():
         let finalTranscript = '';
         let avatarState = 'idle'; // Estados: idle, listening, speaking, processing
         let avatarAnimationInterval = null;
-        let interactionCount = 0;
-        const MAX_INTERACTIONS = 15;
         
         // Traducción de emociones
         const emociones_es = {
@@ -1781,56 +1547,11 @@ async def chat_interactivo():
         const emotionProgress = document.getElementById('emotionProgress');
         const emotionHistoryDisplay = document.getElementById('emotionHistory');
         const speechStatus = document.getElementById('speechStatus');
-        const interactionCounter = document.getElementById('interactionCounter');
-        const chatContainer = document.getElementById('chatContainer');
-        const sendButton = document.getElementById('sendButton');
-        
-        // Actualizar contador de interacciones
-        function updateInteractionCounter() {
-            interactionCounter.textContent = `Interacciones: ${interactionCount}/${MAX_INTERACTIONS}`;
-            
-            // Cambiar color cuando se acerca al límite
-            if (interactionCount >= MAX_INTERACTIONS - 3) {
-                interactionCounter.style.backgroundColor = 'rgba(255, 193, 7, 0.8)';
-            }
-            
-            if (interactionCount >= MAX_INTERACTIONS) {
-                interactionCounter.style.backgroundColor = 'rgba(220, 53, 69, 0.8)';
-            }
-        }
-        
-        // Verificar si se alcanzó el límite de interacciones
-        function checkInteractionLimit() {
-            if (interactionCount >= MAX_INTERACTIONS) {
-                // Deshabilitar el chat
-                messageInput.disabled = true;
-                sendButton.disabled = true;
-                chatContainer.classList.add('disabled-chat');
-                
-                // Desactivar reconocimiento de voz si está activo
-                if (isSpeechRecognitionOn) {
-                    toggleSpeechRecognition();
-                }
-                
-                // Mostrar mensaje de límite alcanzado
-                const limitMessage = document.createElement('div');
-                limitMessage.className = 'limit-reached';
-                limitMessage.innerHTML = `
-                    <h5>Límite de interacciones alcanzado</h5>
-                    <p>Has alcanzado el máximo de ${MAX_INTERACTIONS} interacciones. El chat ha sido deshabilitado.</p>
-                    <p>Por favor, recarga la página para comenzar una nueva conversación.</p>
-                `;
-                chatBody.appendChild(limitMessage);
-                
-                return true;
-            }
-            return false;
-        }
         
         // Control de animaciones del avatar
-        function setAvatarState(state) {
-            if (avatarState === state) return;
-                
+      function setAvatarState(state) {
+        if (avatarState === state) return;
+            
             avatarState = state;
             
             // Remover todas las clases de animación primero
@@ -2147,8 +1868,6 @@ async def chat_interactivo():
         
         // Alternar reconocimiento de voz
         function toggleSpeechRecognition() {
-            if (checkInteractionLimit()) return;
-            
             if (!speechRecognizer) {
                 initSpeechRecognition();
             }
@@ -2194,16 +1913,9 @@ async def chat_interactivo():
         async function sendMessageFromVoice(transcript) {
             if (!transcript || transcript.trim().length === 0) return;
             
-            // Verificar límite de interacciones
-            if (checkInteractionLimit()) return;
-            
             // Agregar mensaje del usuario al chat
             addMessageToChat('user', transcript);
             chatHistory.push({role: 'user', content: transcript});
-            
-            // Incrementar contador de interacciones
-            interactionCount++;
-            updateInteractionCounter();
             
             // Cambiar a estado de procesamiento
             setAvatarState('processing');
@@ -2239,9 +1951,6 @@ async def chat_interactivo():
                 addMessageToChat('assistant', data.response);
                 chatHistory.push({role: 'assistant', content: data.response});
                 
-                // Verificar si hemos alcanzado el límite después de esta interacción
-                checkInteractionLimit();
-                
                 // Volver a estado de escucha después de un tiempo
                 setTimeout(() => {
                     if (avatarState === 'speaking') {
@@ -2263,9 +1972,6 @@ async def chat_interactivo():
                 const fallbackResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
                 addMessageToChat('assistant', fallbackResponse);
                 chatHistory.push({role: 'assistant', content: fallbackResponse});
-                
-                // Verificar si hemos alcanzado el límite después de esta interacción
-                checkInteractionLimit();
             }
         }
         
@@ -2294,9 +2000,6 @@ async def chat_interactivo():
                 // Iniciar animaciones del avatar
                 setAvatarState('idle');
                 startRandomAvatarAnimations();
-                
-                // Inicializar contador de interacciones
-                updateInteractionCounter();
                 
                 // Cargar modelos de reconocimiento facial
                 await loadModels();
@@ -2363,10 +2066,6 @@ async def chat_interactivo():
         // Función para enviar mensajes
         async function sendMessage(event) {
             event.preventDefault();
-            
-            // Verificar límite de interacciones
-            if (checkInteractionLimit()) return;
-            
             const message = messageInput.value.trim();
             
             if (!message) return;
@@ -2375,10 +2074,6 @@ async def chat_interactivo():
             addMessageToChat('user', message);
             chatHistory.push({role: 'user', content: message});
             messageInput.value = '';
-            
-            // Incrementar contador de interacciones
-            interactionCount++;
-            updateInteractionCounter();
             
             // Cambiar a estado de procesamiento
             setAvatarState('processing');
@@ -2414,9 +2109,6 @@ async def chat_interactivo():
                 addMessageToChat('assistant', data.response);
                 chatHistory.push({role: 'assistant', content: data.response});
                 
-                // Verificar si hemos alcanzado el límite después de esta interacción
-                checkInteractionLimit();
-                
                 // Volver a estado inactivo después de un tiempo
                 setTimeout(() => {
                     if (avatarState === 'speaking') {
@@ -2439,9 +2131,6 @@ async def chat_interactivo():
                 const fallbackResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
                 addMessageToChat('assistant', fallbackResponse);
                 chatHistory.push({role: 'assistant', content: fallbackResponse});
-                
-                // Verificar si hemos alcanzado el límite después de esta interacción
-                checkInteractionLimit();
             }
         }
         
@@ -4382,25 +4071,18 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
     user_static_path = os.path.join(static_path, f'user_{usuario_id}')
     os.makedirs(user_static_path, exist_ok=True)
 
-    # CALCULAR DATOS PARA INTERPRETACIÓN PRIMERO
-    promedios_interpretacion = {}
-    dimension_scores_interpretacion = {}
+    # Generate individual radar charts for each category
     individual_charts = []
     inicio = 0
     
-    # Un solo bucle para calcular todo
     for categoria in categorias:
         dim = dimensiones[categoria]
         respuestas_categoria = valores_respuestas[inicio:inicio + len(dim)]
         inicio += len(dim)
         
-        # Calcular valores normalizados (0-1) para gráficos
+        # Normalize values
         valores = np.interp(respuestas_categoria, (1, 10), (0, 1))
         promedio = np.mean(valores)
-        
-        # Guardar datos para interpretación
-        promedios_interpretacion[categoria] = promedio
-        dimension_scores_interpretacion[categoria] = respuestas_categoria.tolist() if hasattr(respuestas_categoria, 'tolist') else list(respuestas_categoria)
         
         # Crear textos tooltip personalizados
         tooltips = [
@@ -4461,13 +4143,13 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
                 font=dict(size=16, color=text_color)
             ),
             showlegend=False,
-            height=400,
-            width=500,
-            margin=dict(t=80, b=40, l=40, r=40),
+            height=400,  # Reduced from 600
+            width=500,   # Reduced from 700
+            margin=dict(t=80, b=40, l=40, r=40),  # Reduced margins
             template='plotly_white',
             font=dict(
                 family="Arial, sans-serif",
-                size=11,
+                size=11,  # Slightly smaller font
                 color=text_color
             ),
             paper_bgcolor='white',
@@ -4529,14 +4211,14 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
                 ticktext=["0%", "20%", "40%", "60%", "80%", "100%"],
                 gridcolor=grid_color,
                 linewidth=1.5,
-                tickfont=dict(size=10)
+                tickfont=dict(size=10)  # Smaller font
             ),
             angularaxis=dict(
                 direction="clockwise",
                 rotation=90,
                 linecolor='gray',
                 gridcolor=grid_color,
-                tickfont=dict(size=11)
+                tickfont=dict(size=11)  # Smaller font
             ),
             bgcolor=bg_color
         ),
@@ -4545,14 +4227,14 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
             x=0.5,
             y=0.95,
             xanchor='center',
-            font=dict(size=18, color=text_color)
+            font=dict(size=18, color=text_color)  # Smaller title
         ),
         showlegend=False,
-        height=500,
-        width=600,
-        margin=dict(t=100, b=150, l=60, r=60),
+        height=500,  # Reduced from 700
+        width=600,   # Reduced from 800
+        margin=dict(t=100, b=150, l=60, r=60),  # Reduced margins
         template='plotly_white',
-        font=dict(family="Arial", size=11, color=text_color),
+        font=dict(family="Arial", size=11, color=text_color),  # Smaller font
         paper_bgcolor='white'
     )
      
@@ -4563,14 +4245,9 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
     
     consolidated_chart_path = f'statics/user_{usuario_id}/{consolidated_filename}'
 
-    # Generar dashboard pasando los datos calculados
-    dashboard_path = generate_dashboard(
-        individual_charts, 
-        consolidated_chart_path, 
-        usuario_id,
-        promedios_interpretacion,
-        dimension_scores_interpretacion
-    )
+    
+    # Generar dashboard pasando las rutas correctas
+    dashboard_path = generate_dashboard(individual_charts, consolidated_chart_path, usuario_id)
      
     return individual_charts + [consolidated_chart_path, dashboard_path]
 def obtener_imagen_categoria(categoria):
@@ -4585,7 +4262,7 @@ def obtener_imagen_categoria(categoria):
     }
     return imagenes.get(categoria, "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40")
 
-def generate_dashboard(individual_charts, consolidated_chart, usuario_id, promedios_interpretacion=None, dimension_scores_interpretacion=None):
+def generate_dashboard(individual_charts, consolidated_chart,usuario_id):
     import os
     import webbrowser
     import json
@@ -4620,9 +4297,6 @@ def generate_dashboard(individual_charts, consolidated_chart, usuario_id, promed
     def get_chatgpt_interpretation(category, score, dimensions, dimension_scores):
         """Obtiene interpretación de ChatGPT para una categoría usando la API v1.0.0+"""
         try:
-            if not client:
-               logging.warning("Cliente de OpenAI no inicializado")
-               return "Servicio de interpretación no disponible"
             prompt = f"""Como experto en bienestar, analiza estos resultados:
 
             Categoría: {category}
@@ -4661,33 +4335,51 @@ def generate_dashboard(individual_charts, consolidated_chart, usuario_id, promed
         "Financiera": ["Ahorro", "Deuda", "Ingresos", "Inversión", "Presupuesto"]
     }
 
-    categorias = list(dimensiones.keys())
+    # Obtener los valores promedio de cada categoría y las puntuaciones por dimensión
+    promedios = {}
+    dimension_scores = {}
     
-    # USAR DIRECTAMENTE LOS DATOS RECIBIDOS (NO LEER ARCHIVOS)
-    promedios = promedios_interpretacion or {}
-    dimension_scores = dimension_scores_interpretacion or {}
-    
-    # Si no se recibieron datos, usar valores por defecto
-    if not promedios or not dimension_scores:
-        print("⚠️  No se recibieron datos de interpretación, usando valores por defecto")
-        for categoria in categorias:
-            promedios[categoria] = 0.5  # Valor medio normalizado (0-1)
-            dimension_scores[categoria] = [5, 5, 5, 5, 5]  # Valores medios (1-10)
-    
+    for categoria in categorias:
+        chart_file = f"statics/user_{usuario_id}/radar_{categoria.lower()}.html"
+        if chart_file in individual_charts:
+            with open(chart_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+                
+                # Extraer el promedio
+                start = content.find("Promedio: ") + len("Promedio: ")
+                end = content.find("%", start)
+                promedio = float(content[start:end])
+                promedios[categoria] = promedio / 10
+                
+                # Extraer valores de dimensiones usando regex
+                data_match = re.search(r'customdata":\s*\[([^\]]+)\]', content)
+                if data_match:
+                    dim_values_str = data_match.group(1)
+                    dim_values = []
+                    for val in dim_values_str.split(','):
+                        try:
+                            clean_val = val.strip().strip('[').strip(']')
+                            if clean_val:
+                                dim_values.append(float(clean_val))
+                        except ValueError:
+                            continue
+                    
+                    dimension_scores[categoria] = dim_values[:5]
     # Obtener interpretaciones de ChatGPT para cada categoría
+    logging.info(f"Archivos recibidos en individual_charts: {individual_charts}")
     ai_interpretations = {}
     for categoria in categorias:
         if categoria in promedios and categoria in dimension_scores:
-            interpretation = get_chatgpt_interpretation(
-                categoria,
-                promedios[categoria] * 10,  # Convertir a escala 0-10
-                dimensiones[categoria],
-                dimension_scores[categoria]  # Ya están en escala 1-10
-            )
-            ai_interpretations[categoria] = interpretation or "Interpretación no disponible"
+          interpretation = get_chatgpt_interpretation(
+            categoria,
+            promedios[categoria],
+            dimensiones[categoria],
+            dimension_scores[categoria]
+         )
+          ai_interpretations[categoria] = interpretation or "Interpretación no disponible"
         else:
-            print(f"❌ No hay datos completos para {categoria}")
-            ai_interpretations[categoria] = "Datos no disponibles para esta categoría"
+         logging.warning(f"No hay datos completos para la categoría {categoria}")
+         ai_interpretations[categoria] = "Datos no disponibles para esta categoría"
 
     # Datos de interpretación para los tooltips
     interpretaciones = {
@@ -5270,7 +4962,7 @@ def generate_dashboard(individual_charts, consolidated_chart, usuario_id, promed
                 f'''
                 <div class="metric-card {categoria_estilos[categoria]['color']}" onclick="showModal('{categoria}')">
                     <span class="metric-title">{categoria}</span>
-                    <span class="metric-value">{promedios.get(categoria, 0) * 10:.1f}</span>
+                    <span class="metric-value">{promedios.get(categoria, 0):.1f}</span>
                     <img src="{obtener_imagen_categoria(categoria)}" alt="{categoria}" class="category-image">
                 </div>
                 '''
@@ -5317,7 +5009,7 @@ def generate_dashboard(individual_charts, consolidated_chart, usuario_id, promed
       // Actualizar el contenido del modal según la categoría seleccionada
       document.getElementById('modalChart').src = "/statics/user_{usuario_id}/radar_" + category.toLowerCase() + ".html";
       document.getElementById('modalTitle').textContent = category.toUpperCase();
-      document.getElementById('modalEvaluation').textContent = ({json.dumps(promedios)}[category] * 10).toFixed(1);
+      document.getElementById('modalEvaluation').textContent = {json.dumps(promedios)}[category].toFixed(1);
       document.getElementById('modalDescription').textContent = {json.dumps(interpretaciones)}[category];
       
       // Mostrar interpretación de IA si está disponible
@@ -5326,7 +5018,7 @@ def generate_dashboard(individual_charts, consolidated_chart, usuario_id, promed
       
       
       // Recomendaciones basadas en el puntaje
-      const score = {json.dumps(promedios)}[category] * 10;
+      const score = {json.dumps(promedios)}[category];
       let recommendations = "";
       
       if(score < 4) {{
@@ -5364,18 +5056,21 @@ def generate_dashboard(individual_charts, consolidated_chart, usuario_id, promed
     dashboard_filename = "dashboard_bienestar.html"
     dashboard_path = os.path.join("statics", f"user_{usuario_id}", dashboard_filename)
     with open(dashboard_path, "w", encoding="utf-8") as f:
-      f.write(html_template)  
-     
+      f.write(html_template)
+
     return f"statics/user_{usuario_id}/{dashboard_filename}"
 
-@app.get("/dashboard-content/{usuario_id}")
+@app.get("/dashboard-content/{usuario_id}", response_class=HTMLResponse)
 async def get_dashboard_content(usuario_id: str):
     dashboard_path = f"statics/user_{usuario_id}/dashboard_bienestar.html"
     
     if not os.path.exists(dashboard_path):
         raise HTTPException(status_code=404, detail="Dashboard no encontrado")
     
-    return FileResponse(dashboard_path)
+    with open(dashboard_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    return HTMLResponse(content=content)
 
 @app.post("/generar-informe/{usuario_id}")
 async def generar_informe(usuario_id: str, respuestas: List[int]):
@@ -5399,6 +5094,18 @@ async def get_dashboard(usuario_id: str):
         raise HTTPException(status_code=404, detail="Dashboard no encontrado")
     
     return FileResponse(dashboard_path)
+
+@app.get("/dashboard-content/{usuario_id}", response_class=HTMLResponse)
+async def get_dashboard_content(usuario_id: str):
+    dashboard_path = f"statics/user_{usuario_id}/dashboard_bienestar.html"
+    
+    if not os.path.exists(dashboard_path):
+        raise HTTPException(status_code=404, detail="Dashboard no encontrado")
+    
+    with open(dashboard_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    return HTMLResponse(content=content)
 
 def generar_graficos_por_categoria_Premium(valores_respuestas):
         matplotlib.use('Agg') 
@@ -5762,7 +5469,7 @@ def generar_pdf_con_analisis(usuario_id):
     # Convertir respuestas a valores numéricos
     valores_respuestas = np.array([int(respuesta) for _, respuesta in respuestas])
     generar_graficos_por_categoria(valores_respuestas)
-    generar_graficos_interactivos(valores_respuestas,usuario_id)
+    #generar_graficos_interactivos(valores_respuestas,usuario_id)
     
     # Análisis básico
     promedio = np.mean(valores_respuestas)
@@ -6983,22 +6690,9 @@ async def guardar_respuestas(request: Request, usuario_id: int = Form(...), pagi
                     button:active {{
                         transform: scale(0.97);
                     }}
-                    #visualizacionBtn {{
-                        display: none;
-                        background-color: #28a745;
-                    }}
-                    #visualizacionBtn:hover {{
-                        background-color: #218838;
-                    }}
-                    .libro-btn {{
-                        background-color: #ff6b35;
-                    }}
-                    .libro-btn:hover {{
-                        background-color: #e25a2c;
-                    }}
                     @keyframes fadeIn {{
-                        from {{ opacity: 0; transform: translateY(-20px);}}
-                        to {{  opacity: 1; transform: translateY(0);}}
+                        from {{ opacity: 0; transform: translateY(-20px); }}
+                        to {{ opacity: 1; transform: translateY(0); }}
                     }}
                 </style>
             </head>
@@ -7006,28 +6700,9 @@ async def guardar_respuestas(request: Request, usuario_id: int = Form(...), pagi
                 <div class="container">
                     <h1>¡Gracias por tu tiempo!</h1>
                     <p>Haz clic en el botón para continuar:</p>
-                    <button onclick="descargarAnalisis()">📥Descargar Análisis</button>
-                    <button class="libro-btn" onclick="descargarLibro()">📚 Descargar Libro</button>
-                    <button id="visualizacionBtn" onclick="window.location.href='/dashboard-content/{usuario_id}'">📊 Visualización</button>
+                    <button onclick="window.location.href='{ruta_descarga}'">📥 Generar Reporte Interactivo y Descargar Análisis</button>
                     <button onclick="window.location.href='/chat'">💬 Ingresar a Chat</button>
                 </div>
-
-                <script>
-                    function descargarAnalisis() {{
-                        // Redirigir para descargar el análisis
-                        window.location.href = '{ruta_descarga}';
-                        
-                        // Mostrar el botón de visualización después de un breve retraso
-                        setTimeout(function() {{
-                            document.getElementById('visualizacionBtn').style.display = 'inline-block';
-                        }}, 1500); // Retraso para simular el tiempo de descarga
-                    }}
-                    
-                    function descargarLibro() {{
-                        // Redirigir para descargar el libro desde la carpeta static
-                        window.location.href = '/statics/libros/mi_libro.pdf';
-                    }}
-                </script>
             </body>
             </html>
             """
@@ -7183,12 +6858,12 @@ async def descargar_pdf_Premium(usuario_id: int):
 
     try:
         await aiosmtplib.send(
-             message,
-             hostname="smtp.gmail.com",
-             port=587,
-             start_tls=True,
-             username="correopruebavital@gmail.com",
-             password="cxvi hyne temx xmgt"
+            # //   message,
+            # //   hostname="smtp.gmail.com",
+            # //   port=587,
+            # //   start_tls=True,
+            # //   username="correopruebavital@gmail.com",
+            # //   password="cxvi hyne temx xmgt"
         )
     except Exception as e:
         print(f"Error al enviar el correo: {e}")
@@ -7202,7 +6877,6 @@ async def descargar_pdf(usuario_id: int):
     if not os.path.exists(pdf_path):
         return HTMLResponse(content="<h1>Error al generar el PDF.</h1>")
 
-        
     # Envío de correo automático al destinatario predeterminado
     correo_destino = "jmzconsultor@gmail.com"
     message = EmailMessage()
@@ -7216,18 +6890,18 @@ async def descargar_pdf(usuario_id: int):
 
     try:
         await aiosmtplib.send(
-             message,
-             hostname="smtp.gmail.com",
-             port=587,
-             start_tls=True,
-             username="correopruebavital@gmail.com",
-             password="cxvi hyne temx xmgt"
-        )
+        #     //   message,
+        #     //   hostname="smtp.gmail.com",
+        #     //   port=587,
+        #     //   start_tls=True,
+        #     //   username="correopruebavital@gmail.com",
+        #     //   password="cxvi hyne temx xmgt"
+         )
     except Exception as e:
         print(f"Error al enviar el correo: {e}")
 
     return FileResponse(pdf_path, media_type="application/pdf", filename=f"Analisis_Respuestas_{usuario_id}.pdf")
-    
+
 
 @app.post("/enviar_pdf_email")
 async def enviar_pdf_email(usuario_id: int = Form(...), correo_destino: str = Form(...)):
@@ -7250,12 +6924,12 @@ async def enviar_pdf_email(usuario_id: int = Form(...), correo_destino: str = Fo
     # Envía el correo
     try:
         await aiosmtplib.send(
-           message,
-           hostname="smtp.gmail.com",
-            port=587,
-           start_tls=True,
-            username="correopruebavital@gmail.com",
-           password="cxvi hyne temx xmgt"
+            # // message,
+            # // hostname="smtp.gmail.com",
+            # //  port=587,
+            # // start_tls=True,
+            # //  username="correopruebavital@gmail.com",
+            # // password="cxvi hyne temx xmgt"
         )
         return {"mensaje": f"PDF enviado a {correo_destino} correctamente."}
     except Exception as e:
