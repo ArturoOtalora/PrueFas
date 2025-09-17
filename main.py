@@ -5407,7 +5407,7 @@ def generar_pdf_con_analisis(usuario_id):
     # Convertir respuestas a valores numéricos
     valores_respuestas = np.array([int(respuesta) for _, respuesta in respuestas])
     generar_graficos_por_categoria(valores_respuestas)
-    #generar_graficos_interactivos(valores_respuestas,usuario_id)
+    
     
     # Análisis básico
     promedio = np.mean(valores_respuestas)
@@ -6783,7 +6783,7 @@ async def descargar_pdf_Premium(usuario_id: int):
         await aiosmtplib.send(
              message,
              hostname="smtp.gmail.com",
-             port=587,
+             port=465,
              start_tls=True,
              username="correopruebavital@gmail.com",
              password="olxh cdfd lsmo skcz"
@@ -6815,7 +6815,7 @@ async def descargar_pdf(usuario_id: int):
         await aiosmtplib.send(
              message,
              hostname="smtp.gmail.com",
-             port=587,
+             port=465,
              start_tls=True,
              username="correopruebavital@gmail.com",
              password="olxh cdfd lsmo skcz"
@@ -6849,7 +6849,7 @@ async def enviar_pdf_email(usuario_id: int = Form(...), correo_destino: str = Fo
         await aiosmtplib.send(
            message,
            hostname="smtp.gmail.com",
-            port=587,
+            port=465,
            start_tls=True,
             username="correopruebavital@gmail.com",
            password="olxh cdfd lsmo skcz"
