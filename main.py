@@ -7361,7 +7361,7 @@ def generar_pdf_con_analisis(usuario_id):
 
         y_position -= 10  # Espacio adicional entre cada punto    
 
-    generar_graficos_interactivos(valores_respuestas,usuario_id)
+    # generar_graficos_interactivos(valores_respuestas,usuario_id)
     c.save()
     
     return pdf_path
