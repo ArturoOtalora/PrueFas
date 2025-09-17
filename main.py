@@ -4006,11 +4006,11 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
    
     categorias = ["Ambiental", "Vital", "Emocional", "Mental", "Existencial", "Financiera"]
     dimensiones = {
-        "Vital": ["Alimentación", "Descanso", "Ejercicio", "Hábitos Saludables", "Salud Vital Corporal"],
-        "Emocional": ["Autoconocimiento", "Autoregulación", "Cuidado Personal", "Motivación", "Resiliencia"],
-        "Mental": ["Disfruta De La Realidad", "Manejo Del Stress", "Relaciones Saludables", "Conexión Con Otros", "Seguridad Y Confianza"],
-        "Existencial": ["Autenticidad Conmigo Mismo", "Lo Que Piensas Te Motiva", "Por Qué Estoy Aquí?", "Propósito De Vida", "Quién Soy"],
-        "Financiera": ["Ahorro", "Deuda", "Ingresos", "Inversión", "Presupuesto"],
+        "Vital": ["Alimentación", "Ejercicio", "Descanso", "Respuesta medica", "Hábitos Saludables"],
+        "Emocional": ["Autoconocimiento","Motivación", "Autoregulación", "Resiliencia", "Cuidado Personal"],
+        "Mental": ["Manejo Del Stress", "Red de apoyo", "Disfruta De La Realidad", "Reflexión y cuidado", "Autoestima y reconocimiento"],
+        "Existencial": ["Autenticidad Conmigo Mismo", "Lo Que Piensas Te Motiva", "Propósito De Vida", "Coherencia contigo mismo", "Quién Soy"],
+        "Financiera": ["Ahorro", "Presupuesto", "Inversión", "Gestión deuda", "Libertad financiera"],
         "Ambiental": ["Autocuidado", "Armonía ambiental", "Accesibilidad Ambiental", "Atención preventiva", "Conciencia ambiental"]
     }
     
@@ -4071,18 +4071,25 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
     user_static_path = os.path.join(static_path, f'user_{usuario_id}')
     os.makedirs(user_static_path, exist_ok=True)
 
-    # Generate individual radar charts for each category
+    # CALCULAR DATOS PARA INTERPRETACIÓN PRIMERO
+    promedios_interpretacion = {}
+    dimension_scores_interpretacion = {}
     individual_charts = []
     inicio = 0
     
+    # Un solo bucle para calcular todo
     for categoria in categorias:
         dim = dimensiones[categoria]
         respuestas_categoria = valores_respuestas[inicio:inicio + len(dim)]
         inicio += len(dim)
         
-        # Normalize values
+        # Calcular valores normalizados (0-1) para gráficos
         valores = np.interp(respuestas_categoria, (1, 10), (0, 1))
         promedio = np.mean(valores)
+        
+        # Guardar datos para interpretación
+        promedios_interpretacion[categoria] = promedio
+        dimension_scores_interpretacion[categoria] = respuestas_categoria.tolist() if hasattr(respuestas_categoria, 'tolist') else list(respuestas_categoria)
         
         # Crear textos tooltip personalizados
         tooltips = [
@@ -4143,13 +4150,13 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
                 font=dict(size=16, color=text_color)
             ),
             showlegend=False,
-            height=400,  # Reduced from 600
-            width=500,   # Reduced from 700
-            margin=dict(t=80, b=40, l=40, r=40),  # Reduced margins
+            height=400,
+            width=500,
+            margin=dict(t=80, b=40, l=40, r=40),
             template='plotly_white',
             font=dict(
                 family="Arial, sans-serif",
-                size=11,  # Slightly smaller font
+                size=11,
                 color=text_color
             ),
             paper_bgcolor='white',
@@ -4211,14 +4218,14 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
                 ticktext=["0%", "20%", "40%", "60%", "80%", "100%"],
                 gridcolor=grid_color,
                 linewidth=1.5,
-                tickfont=dict(size=10)  # Smaller font
+                tickfont=dict(size=10)
             ),
             angularaxis=dict(
                 direction="clockwise",
                 rotation=90,
                 linecolor='gray',
                 gridcolor=grid_color,
-                tickfont=dict(size=11)  # Smaller font
+                tickfont=dict(size=11)
             ),
             bgcolor=bg_color
         ),
@@ -4227,14 +4234,14 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
             x=0.5,
             y=0.95,
             xanchor='center',
-            font=dict(size=18, color=text_color)  # Smaller title
+            font=dict(size=18, color=text_color)
         ),
         showlegend=False,
-        height=500,  # Reduced from 700
-        width=600,   # Reduced from 800
-        margin=dict(t=100, b=150, l=60, r=60),  # Reduced margins
+        height=500,
+        width=600,
+        margin=dict(t=100, b=150, l=60, r=60),
         template='plotly_white',
-        font=dict(family="Arial", size=11, color=text_color),  # Smaller font
+        font=dict(family="Arial", size=11, color=text_color),
         paper_bgcolor='white'
     )
      
@@ -4245,11 +4252,17 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
     
     consolidated_chart_path = f'statics/user_{usuario_id}/{consolidated_filename}'
 
-    
-    # Generar dashboard pasando las rutas correctas
-    dashboard_path = generate_dashboard(individual_charts, consolidated_chart_path, usuario_id)
+    # Generar dashboard pasando los datos calculados
+    dashboard_path = generate_dashboard(
+        individual_charts, 
+        consolidated_chart_path, 
+        usuario_id,
+        promedios_interpretacion,
+        dimension_scores_interpretacion
+    )
      
     return individual_charts + [consolidated_chart_path, dashboard_path]
+     
 def obtener_imagen_categoria(categoria):
     """Devuelve URL de imagen representativa para cada categoría"""
     imagenes = {
@@ -4262,7 +4275,7 @@ def obtener_imagen_categoria(categoria):
     }
     return imagenes.get(categoria, "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40")
 
-def generate_dashboard(individual_charts, consolidated_chart,usuario_id):
+def generate_dashboard(individual_charts, consolidated_chart, usuario_id, promedios_interpretacion=None, dimension_scores_interpretacion=None):
     import os
     import webbrowser
     import json
@@ -5469,7 +5482,7 @@ def generar_pdf_con_analisis(usuario_id):
     # Convertir respuestas a valores numéricos
     valores_respuestas = np.array([int(respuesta) for _, respuesta in respuestas])
     generar_graficos_por_categoria(valores_respuestas)
-    #generar_graficos_interactivos(valores_respuestas,usuario_id)
+    generar_graficos_interactivos(valores_respuestas,usuario_id)
     
     # Análisis básico
     promedio = np.mean(valores_respuestas)
@@ -6858,12 +6871,12 @@ async def descargar_pdf_Premium(usuario_id: int):
 
     try:
         await aiosmtplib.send(
-            # //   message,
-            # //   hostname="smtp.gmail.com",
-            # //   port=587,
-            # //   start_tls=True,
-            # //   username="correopruebavital@gmail.com",
-            # //   password="cxvi hyne temx xmgt"
+               message,
+               hostname="smtp.gmail.com",
+               port=587,
+               start_tls=True,
+               username="correopruebavital@gmail.com",
+               password="olxh cdfd lsmo skcz"
         )
     except Exception as e:
         print(f"Error al enviar el correo: {e}")
@@ -6890,12 +6903,12 @@ async def descargar_pdf(usuario_id: int):
 
     try:
         await aiosmtplib.send(
-        #     //   message,
-        #     //   hostname="smtp.gmail.com",
-        #     //   port=587,
-        #     //   start_tls=True,
-        #     //   username="correopruebavital@gmail.com",
-        #     //   password="cxvi hyne temx xmgt"
+               message,
+               hostname="smtp.gmail.com",
+               port=587,
+               start_tls=True,
+               username="correopruebavital@gmail.com",
+               password="olxh cdfd lsmo skcz"
          )
     except Exception as e:
         print(f"Error al enviar el correo: {e}")
@@ -6924,12 +6937,12 @@ async def enviar_pdf_email(usuario_id: int = Form(...), correo_destino: str = Fo
     # Envía el correo
     try:
         await aiosmtplib.send(
-            # // message,
-            # // hostname="smtp.gmail.com",
-            # //  port=587,
-            # // start_tls=True,
-            # //  username="correopruebavital@gmail.com",
-            # // password="cxvi hyne temx xmgt"
+             message,
+             hostname="smtp.gmail.com",
+              port=587,
+             start_tls=True,
+              username="correopruebavital@gmail.com",
+             password="olxh cdfd lsmo skcz"
         )
         return {"mensaje": f"PDF enviado a {correo_destino} correctamente."}
     except Exception as e:
