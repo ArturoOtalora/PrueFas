@@ -4249,7 +4249,7 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
     # Generar dashboard pasando las rutas correctas
     dashboard_path = generate_dashboard(individual_charts, consolidated_chart_path, usuario_id)
      
-     
+    return individual_charts + [consolidated_chart_path, dashboard_path]
 def obtener_imagen_categoria(categoria):
     """Devuelve URL de imagen representativa para cada categoría"""
     imagenes = {
@@ -6929,7 +6929,7 @@ async def enviar_pdf_email(usuario_id: int = Form(...), correo_destino: str = Fo
               port=587,
              start_tls=True,
               username="correopruebavital@gmail.com",
-             password="olxh cdfd lsmo skcz"
+              password="olxh cdfd lsmo skcz"
         )
         return {"mensaje": f"PDF enviado a {correo_destino} correctamente."}
     except Exception as e:
