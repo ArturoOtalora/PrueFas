@@ -1272,6 +1272,11 @@ async def chat_with_gpt(request: Request):
         user_messages = data.get("messages", [])
         emotion = data.get("emotion", None)
 
+        if len(user_messages) >= 30:  # 15 interacciones * 2 (user + assistant)
+            raise HTTPException(
+                status_code=400,
+                detail="Has alcanzado el límite máximo de 15 interacciones."
+            )
         # Construir mensajes
         messages = [
             {"role": "system", "content": get_system_prompt(get_emotion_context(emotion))},
@@ -1311,7 +1316,7 @@ async def chat_with_gpt(request: Request):
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_interactivo():
     return """
-        <!DOCTYPE html>
+      <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -1517,106 +1522,131 @@ async def chat_interactivo():
         }
         
         /* Estilos para el avatar animado */
-.avatar-container {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #f0f8ff;
-}
+        .avatar-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f8ff;
+        }
 
-.avatar-image {
-    width: 70%;
-    height: auto;
-    transition: all 0.3s ease;
-    filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.2));
-}
+        .avatar-image {
+            width: 70%;
+            height: auto;
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.2));
+        }
 
-/* Animaciones corregidas para el avatar */
-.avatar-breathing {
-    animation: breathing 3s infinite ease-in-out;
-}
+        /* Animaciones corregidas para el avatar */
+        .avatar-breathing {
+            animation: breathing 3s infinite ease-in-out;
+        }
 
-.avatar-listening {
-    animation: listening 1.2s infinite ease-in-out;
-}
+        .avatar-listening {
+            animation: listening 1.2s infinite ease-in-out;
+        }
 
-.avatar-speaking {
-    animation: speaking 0.7s infinite ease-in-out;
-}
+        .avatar-speaking {
+            animation: speaking 0.7s infinite ease-in-out;
+        }
 
-.avatar-blinking {
-    animation: blinking 5s infinite ease-in-out;
-}
+        .avatar-blinking {
+            animation: blinking 5s infinite ease-in-out;
+        }
 
-.avatar-idle {
-    animation: idleMovement 12s infinite ease-in-out;
-}
+        .avatar-idle {
+            animation: idleMovement 12s infinite ease-in-out;
+        }
 
-/* Definiciones de keyframes mejoradas */
-@keyframes breathing {
-    0%, 100% { 
-        transform: scale(1); 
-    }
-    50% { 
-        transform: scale(1.05); 
-    }
-}
+        /* Definiciones de keyframes mejoradas */
+        @keyframes breathing {
+            0%, 100% { 
+                transform: scale(1); 
+            }
+            50% { 
+                transform: scale(1.05); 
+            }
+        }
 
-@keyframes listening {
-    0%, 100% { 
-        transform: translateY(0); 
-    }
-    50% { 
-        transform: translateY(-8px); 
-    }
-}
+        @keyframes listening {
+            0%, 100% { 
+                transform: translateY(0); 
+            }
+            50% { 
+                transform: translateY(-8px); 
+            }
+        }
 
-@keyframes speaking {
-    0%, 100% { 
-        transform: scale(1); 
-        opacity: 1;
-    }
-    25% { 
-        transform: scale(1.08); 
-        opacity: 0.95;
-    }
-    50% { 
-        transform: scale(1); 
-        opacity: 1;
-    }
-    75% { 
-        transform: scale(1.05); 
-        opacity: 0.97;
-    }
-}
+        @keyframes speaking {
+            0%, 100% { 
+                transform: scale(1); 
+                opacity: 1;
+            }
+            25% { 
+                transform: scale(1.08); 
+                opacity: 0.95;
+            }
+            50% { 
+                transform: scale(1); 
+                opacity: 1;
+            }
+            75% { 
+                transform: scale(1.05); 
+                opacity: 0.97;
+            }
+        }
 
-@keyframes blinking {
-    0%, 88% { 
-        opacity: 1; 
-    }
-    90%, 92% { 
-        opacity: 0.3; 
-    }
-    94%, 100% { 
-        opacity: 1; 
-    }
-}
+        @keyframes blinking {
+            0%, 88% { 
+                opacity: 1; 
+            }
+            90%, 92% { 
+                opacity: 0.3; 
+            }
+            94%, 100% { 
+                opacity: 1; 
+            }
+        }
 
-@keyframes idleMovement {
-    0%, 100% { 
-        transform: translateX(0) rotate(0); 
-    }
-    33% { 
-        transform: translateX(3px) rotate(0.7deg); 
-    }
-    66% { 
-        transform: translateX(-3px) rotate(-0.7deg); 
-    }
-}
+        @keyframes idleMovement {
+            0%, 100% { 
+                transform: translateX(0) rotate(0); 
+            }
+            33% { 
+                transform: translateX(3px) rotate(0.7deg); 
+            }
+            66% { 
+                transform: translateX(-3px) rotate(-0.7deg); 
+            }
+        }
+        
+        /* Estilos para el límite de interacciones */
+        .limit-reached {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .interaction-counter {
+            position: absolute;
+            top: 10px;
+            right: 120px;
+            background-color: rgba(0,0,0,0.5);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 10;
+        }
+        .disabled-chat {
+            opacity: 0.6;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -1637,6 +1667,7 @@ async def chat_interactivo():
                     <div id="emotionProgress" class="emotion-progress hidden">Cargando modelos: 0%</div>
                     <div id="emotionHistory" class="emotion-history hidden"></div>
                     <div id="speechStatus" class="speech-recognition-status hidden">Escuchando...</div>
+                    <div id="interactionCounter" class="interaction-counter">Interacciones: 0/15</div>
                     <h6>Tu cámara</h6>
                     <div class="video-controls">
                         <button id="toggleVideo" class="btn btn-media btn-primary">
@@ -1655,7 +1686,7 @@ async def chat_interactivo():
             <div class="video-box">
                 <div id="remoteVideoContainer">
                     <div class="avatar-container" id="avatarContainer">
-                        <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" alt="Avatar de CimaBot" class="avatar-image" id="cimaBotAvatar">
+                        <img src="statics/Mariposa.png" alt="Avatar de CimaBot" class="avatar-image" id="cimaBotAvatar">
                     </div>
                     <video id="remoteVideo" autoplay playsinline class="hidden"></video>
                     <h6>CimaBot</h6>
@@ -1667,7 +1698,7 @@ async def chat_interactivo():
         </div>
         
         <div class="chat-container">
-            <div class="chat-messages">
+            <div class="chat-messages" id="chatContainer">
                 <div class="chat-header">
                     Chat con CimaBot
                 </div>
@@ -1683,7 +1714,7 @@ async def chat_interactivo():
                         <div class="input-group">
                             <input type="text" class="form-control" id="messageInput" 
                                    placeholder="Escribe tu mensaje..." required>
-                            <button class="btn btn-primary" type="submit">
+                            <button class="btn btn-primary" type="submit" id="sendButton">
                                 <i class="bi bi-send"></i>
                             </button>
                         </div>
@@ -1714,6 +1745,8 @@ async def chat_interactivo():
         let finalTranscript = '';
         let avatarState = 'idle'; // Estados: idle, listening, speaking, processing
         let avatarAnimationInterval = null;
+        let interactionCount = 0;
+        const MAX_INTERACTIONS = 15;
         
         // Traducción de emociones
         const emociones_es = {
@@ -1744,11 +1777,56 @@ async def chat_interactivo():
         const emotionProgress = document.getElementById('emotionProgress');
         const emotionHistoryDisplay = document.getElementById('emotionHistory');
         const speechStatus = document.getElementById('speechStatus');
+        const interactionCounter = document.getElementById('interactionCounter');
+        const chatContainer = document.getElementById('chatContainer');
+        const sendButton = document.getElementById('sendButton');
+        
+        // Actualizar contador de interacciones
+        function updateInteractionCounter() {
+            interactionCounter.textContent = `Interacciones: ${interactionCount}/${MAX_INTERACTIONS}`;
+            
+            // Cambiar color cuando se acerca al límite
+            if (interactionCount >= MAX_INTERACTIONS - 3) {
+                interactionCounter.style.backgroundColor = 'rgba(255, 193, 7, 0.8)';
+            }
+            
+            if (interactionCount >= MAX_INTERACTIONS) {
+                interactionCounter.style.backgroundColor = 'rgba(220, 53, 69, 0.8)';
+            }
+        }
+        
+        // Verificar si se alcanzó el límite de interacciones
+        function checkInteractionLimit() {
+            if (interactionCount >= MAX_INTERACTIONS) {
+                // Deshabilitar el chat
+                messageInput.disabled = true;
+                sendButton.disabled = true;
+                chatContainer.classList.add('disabled-chat');
+                
+                // Desactivar reconocimiento de voz si está activo
+                if (isSpeechRecognitionOn) {
+                    toggleSpeechRecognition();
+                }
+                
+                // Mostrar mensaje de límite alcanzado
+                const limitMessage = document.createElement('div');
+                limitMessage.className = 'limit-reached';
+                limitMessage.innerHTML = `
+                    <h5>Límite de interacciones alcanzado</h5>
+                    <p>Has alcanzado el máximo de ${MAX_INTERACTIONS} interacciones. El chat ha sido deshabilitado.</p>
+                    <p>Por favor, recarga la página para comenzar una nueva conversación.</p>
+                `;
+                chatBody.appendChild(limitMessage);
+                
+                return true;
+            }
+            return false;
+        }
         
         // Control de animaciones del avatar
-      function setAvatarState(state) {
-        if (avatarState === state) return;
-            
+        function setAvatarState(state) {
+            if (avatarState === state) return;
+                
             avatarState = state;
             
             // Remover todas las clases de animación primero
@@ -2065,6 +2143,8 @@ async def chat_interactivo():
         
         // Alternar reconocimiento de voz
         function toggleSpeechRecognition() {
+            if (checkInteractionLimit()) return;
+            
             if (!speechRecognizer) {
                 initSpeechRecognition();
             }
@@ -2110,9 +2190,16 @@ async def chat_interactivo():
         async function sendMessageFromVoice(transcript) {
             if (!transcript || transcript.trim().length === 0) return;
             
+            // Verificar límite de interacciones
+            if (checkInteractionLimit()) return;
+            
             // Agregar mensaje del usuario al chat
             addMessageToChat('user', transcript);
             chatHistory.push({role: 'user', content: transcript});
+            
+            // Incrementar contador de interacciones
+            interactionCount++;
+            updateInteractionCounter();
             
             // Cambiar a estado de procesamiento
             setAvatarState('processing');
@@ -2148,6 +2235,9 @@ async def chat_interactivo():
                 addMessageToChat('assistant', data.response);
                 chatHistory.push({role: 'assistant', content: data.response});
                 
+                // Verificar si hemos alcanzado el límite después de esta interacción
+                checkInteractionLimit();
+                
                 // Volver a estado de escucha después de un tiempo
                 setTimeout(() => {
                     if (avatarState === 'speaking') {
@@ -2169,6 +2259,9 @@ async def chat_interactivo():
                 const fallbackResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
                 addMessageToChat('assistant', fallbackResponse);
                 chatHistory.push({role: 'assistant', content: fallbackResponse});
+                
+                // Verificar si hemos alcanzado el límite después de esta interacción
+                checkInteractionLimit();
             }
         }
         
@@ -2197,6 +2290,9 @@ async def chat_interactivo():
                 // Iniciar animaciones del avatar
                 setAvatarState('idle');
                 startRandomAvatarAnimations();
+                
+                // Inicializar contador de interacciones
+                updateInteractionCounter();
                 
                 // Cargar modelos de reconocimiento facial
                 await loadModels();
@@ -2263,6 +2359,10 @@ async def chat_interactivo():
         // Función para enviar mensajes
         async function sendMessage(event) {
             event.preventDefault();
+            
+            // Verificar límite de interacciones
+            if (checkInteractionLimit()) return;
+            
             const message = messageInput.value.trim();
             
             if (!message) return;
@@ -2271,6 +2371,10 @@ async def chat_interactivo():
             addMessageToChat('user', message);
             chatHistory.push({role: 'user', content: message});
             messageInput.value = '';
+            
+            // Incrementar contador de interacciones
+            interactionCount++;
+            updateInteractionCounter();
             
             // Cambiar a estado de procesamiento
             setAvatarState('processing');
@@ -2306,6 +2410,9 @@ async def chat_interactivo():
                 addMessageToChat('assistant', data.response);
                 chatHistory.push({role: 'assistant', content: data.response});
                 
+                // Verificar si hemos alcanzado el límite después de esta interacción
+                checkInteractionLimit();
+                
                 // Volver a estado inactivo después de un tiempo
                 setTimeout(() => {
                     if (avatarState === 'speaking') {
@@ -2328,6 +2435,9 @@ async def chat_interactivo():
                 const fallbackResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
                 addMessageToChat('assistant', fallbackResponse);
                 chatHistory.push({role: 'assistant', content: fallbackResponse});
+                
+                // Verificar si hemos alcanzado el límite después de esta interacción
+                checkInteractionLimit();
             }
         }
         
