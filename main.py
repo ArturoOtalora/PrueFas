@@ -4247,7 +4247,7 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
 
     
     # Generar dashboard pasando las rutas correctas
-    dashboard_path = generate_dashboard(individual_charts, consolidated_chart_path, usuario_id)
+    dashboard_path = generate_dashboard(valores_respuestas, individual_charts, consolidated_chart_path, usuario_id)
      
     return individual_charts + [consolidated_chart_path, dashboard_path]
 def obtener_imagen_categoria(categoria):
@@ -4262,7 +4262,7 @@ def obtener_imagen_categoria(categoria):
     }
     return imagenes.get(categoria, "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40")
 
-def generate_dashboard(individual_charts, consolidated_chart,usuario_id):
+def generate_dashboard(valores_respuestas, individual_charts, consolidated_chart, usuario_id):
     import os
     import webbrowser
     import json
@@ -4338,48 +4338,34 @@ def generate_dashboard(individual_charts, consolidated_chart,usuario_id):
     # Obtener los valores promedio de cada categoría y las puntuaciones por dimensión
     promedios = {}
     dimension_scores = {}
+    inicio = 0
     
     for categoria in categorias:
-        chart_file = f"statics/user_{usuario_id}/radar_{categoria.lower()}.html"
-        if chart_file in individual_charts:
-            with open(chart_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-                
-                # Extraer el promedio
-                start = content.find("Promedio: ") + len("Promedio: ")
-                end = content.find("%", start)
-                promedio = float(content[start:end])
-                promedios[categoria] = promedio / 10
-                
-                # Extraer valores de dimensiones usando regex
-                data_match = re.search(r'customdata":\s*\[([^\]]+)\]', content)
-                if data_match:
-                    dim_values_str = data_match.group(1)
-                    dim_values = []
-                    for val in dim_values_str.split(','):
-                        try:
-                            clean_val = val.strip().strip('[').strip(']')
-                            if clean_val:
-                                dim_values.append(float(clean_val))
-                        except ValueError:
-                            continue
-                    
-                    dimension_scores[categoria] = dim_values[:5]
+        dim = dimensiones[categoria]
+        respuestas_categoria = valores_respuestas[inicio:inicio + len(dim)]
+        inicio += len(dim)
+        
+        # Calcular promedio normalizado (0-1)
+        valores = np.interp(respuestas_categoria, (1, 10), (0, 1))
+        promedio = np.mean(valores)
+        promedios[categoria] = promedio
+        
+        # Guardar puntuaciones originales por dimensión
+        dimension_scores[categoria] = respuestas_categoria
+
     # Obtener interpretaciones de ChatGPT para cada categoría
-    logging.info(f"Archivos recibidos en individual_charts: {individual_charts}")
     ai_interpretations = {}
     for categoria in categorias:
         if categoria in promedios and categoria in dimension_scores:
-          interpretation = get_chatgpt_interpretation(
-            categoria,
-            promedios[categoria],
-            dimensiones[categoria],
-            dimension_scores[categoria]
-         )
-          ai_interpretations[categoria] = interpretation or "Interpretación no disponible"
+            interpretation = get_chatgpt_interpretation(
+                categoria,
+                promedios[categoria] * 10,  # Convertir a escala 1-10 para ChatGPT
+                dimensiones[categoria],
+                dimension_scores[categoria]
+            )
+            ai_interpretations[categoria] = interpretation or "Interpretación no disponible"
         else:
-         logging.warning(f"No hay datos completos para la categoría {categoria}")
-         ai_interpretations[categoria] = "Datos no disponibles para esta categoría"
+            ai_interpretations[categoria] = "Datos no disponibles para esta categoría"
 
     # Datos de interpretación para los tooltips
     interpretaciones = {
@@ -5468,7 +5454,7 @@ def generar_pdf_con_analisis(usuario_id):
 
     # Convertir respuestas a valores numéricos
     valores_respuestas = np.array([int(respuesta) for _, respuesta in respuestas])
-    generar_graficos_por_categoria(valores_respuestas)
+    generar_graficos_por_categoria(valores_respuestas)  
     generar_graficos_interactivos(valores_respuestas,usuario_id)
     
     # Análisis básico
