@@ -56,6 +56,7 @@ os.makedirs(REPORTS_DIR, exist_ok=True)
 # Montar carpeta como estáticos
 app.mount("/statics", StaticFiles(directory=REPORTS_DIR), name="statics")
 
+print("Contenido en /mnt/shared:", os.listdir("/mnt/shared/statics"))
 
 
 # app.mount("/statics", StaticFiles(directory="statics"), name="statics")
@@ -5308,7 +5309,7 @@ def generate_dashboard(valores_respuestas, individual_charts, consolidated_chart
     
     function showModal(category) {{
       // Actualizar el contenido del modal según la categoría seleccionada
-      document.getElementById('modalChart').src = "/mnt/shared/statics/user_{usuario_id}/radar_" + category.toLowerCase() + ".html";
+      document.getElementById('modalChart').src = "/statics/user_{usuario_id}/radar_" + category.toLowerCase() + ".html";
       document.getElementById('modalTitle').textContent = category.toUpperCase();
       document.getElementById('modalEvaluation').textContent = {json.dumps(promedios)}[category].toFixed(1);
       document.getElementById('modalDescription').textContent = {json.dumps(interpretaciones)}[category];
