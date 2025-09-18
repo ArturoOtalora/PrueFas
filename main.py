@@ -48,9 +48,17 @@ DB_PORT = 17125
 
 app = FastAPI()
 
+REPORTS_DIR = "/mnt/shared/statics"
+
+# Crear carpeta si no existe
+os.makedirs(REPORTS_DIR, exist_ok=True)
+
+# Montar carpeta como estáticos
+app.mount("/statics", StaticFiles(directory=REPORTS_DIR), name="statics")
 
 
-app.mount("/statics", StaticFiles(directory="statics"), name="statics")
+
+# app.mount("/statics", StaticFiles(directory="statics"), name="statics")
 
 preguntas_lista_Premium = [
     "¿Consideras que tu alimentación te nutre lo suficientemente bien?", "¿Realizas ejercicio físico al menos tres veces por semana?", "¿Sientes que tus habito de sueño te dan el descanso necesario?",
@@ -4247,7 +4255,7 @@ def generar_graficos_por_categoria(valores_respuestas):
         # Ajustar el layout con más padding
         plt.tight_layout(pad=3.0)  # Aumenta este valor si necesitas más espacio general
         
-        plt.savefig(f"statics/radar_{categoria.lower()}.png", dpi=300, bbox_inches="tight")
+        plt.savefig(f"/mnt/shared/statics/radar_{categoria.lower()}.png", dpi=300, bbox_inches="tight")
         plt.close()
       # Gráfico radar consolidado
     tabla_promedios = promedios_categorias[:]    
@@ -4306,7 +4314,7 @@ def generar_graficos_por_categoria(valores_respuestas):
     # linewidth=3
     # ))
     # Guardar imagen del gráfico unificado
-    plt.savefig("statics/radar_general.png", dpi=300, bbox_inches="tight")
+    plt.savefig("/mnt/shared/statics/radar_general.png", dpi=300, bbox_inches="tight")
     plt.close()
 
 def generar_graficos_interactivos(valores_respuestas,usuario_id):
@@ -4374,7 +4382,7 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
     text_color = '#333333'
     bg_color = 'rgba(245, 248, 250, 0.8)'
     
-    static_path = "statics"
+    static_path = "/mnt/shared/statics"
     user_static_path = os.path.join(static_path, f'user_{usuario_id}')
     os.makedirs(user_static_path, exist_ok=True)
 
@@ -4469,7 +4477,7 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
         fig.write_html(chart_filepath, full_html=False, include_plotlyjs='cdn')
         
         # Guardar la ruta para usar en el dashboard
-        individual_charts.append(f'statics/user_{usuario_id}/{chart_filename}')
+        individual_charts.append(f'/mnt/shared/statics/user_{usuario_id}/{chart_filename}')
     
     # Generate consolidated radar chart with smaller size
     promedios_categorias = []
@@ -4550,7 +4558,7 @@ def generar_graficos_interactivos(valores_respuestas,usuario_id):
     consolidated_filepath = os.path.join(user_static_path, consolidated_filename)
     fig_consolidado.write_html(consolidated_filepath, full_html=False, include_plotlyjs='cdn')
     
-    consolidated_chart_path = f'statics/user_{usuario_id}/{consolidated_filename}'
+    consolidated_chart_path = f'/mnt/shared/statics/user_{usuario_id}/{consolidated_filename}'
 
     
     # Generar dashboard pasando las rutas correctas
@@ -5300,7 +5308,7 @@ def generate_dashboard(valores_respuestas, individual_charts, consolidated_chart
     
     function showModal(category) {{
       // Actualizar el contenido del modal según la categoría seleccionada
-      document.getElementById('modalChart').src = "/statics/user_{usuario_id}/radar_" + category.toLowerCase() + ".html";
+      document.getElementById('modalChart').src = "/mnt/shared/statics/user_{usuario_id}/radar_" + category.toLowerCase() + ".html";
       document.getElementById('modalTitle').textContent = category.toUpperCase();
       document.getElementById('modalEvaluation').textContent = {json.dumps(promedios)}[category].toFixed(1);
       document.getElementById('modalDescription').textContent = {json.dumps(interpretaciones)}[category];
@@ -5347,15 +5355,15 @@ def generate_dashboard(valores_respuestas, individual_charts, consolidated_chart
 </html>
     """
     dashboard_filename = "dashboard_bienestar.html"
-    dashboard_path = os.path.join("statics", f"user_{usuario_id}", dashboard_filename)
+    dashboard_path = os.path.join("/mnt/shared/statics", f"user_{usuario_id}", dashboard_filename)
     with open(dashboard_path, "w", encoding="utf-8") as f:
       f.write(html_template)
 
-    return f"statics/user_{usuario_id}/{dashboard_filename}"
+    return f"/mnt/shared/statics/user_{usuario_id}/{dashboard_filename}"
 
 @app.get("/dashboard-content/{usuario_id}", response_class=HTMLResponse)
 async def get_dashboard_content(usuario_id: str):
-    dashboard_path = f"statics/user_{usuario_id}/dashboard_bienestar.html"
+    dashboard_path = f"/mnt/shared/statics/user_{usuario_id}/dashboard_bienestar.html"
     
     if not os.path.exists(dashboard_path):
         raise HTTPException(status_code=404, detail="Dashboard no encontrado")
@@ -5381,7 +5389,7 @@ async def generar_informe(usuario_id: str, respuestas: List[int]):
 
 @app.get("/dashboard/{usuario_id}")
 async def get_dashboard(usuario_id: str):
-    dashboard_path = f"statics/user_{usuario_id}/dashboard_bienestar.html"
+    dashboard_path = f"/mnt/shared/statics/user_{usuario_id}/dashboard_bienestar.html"
     
     if not os.path.exists(dashboard_path):
         raise HTTPException(status_code=404, detail="Dashboard no encontrado")
@@ -5390,7 +5398,7 @@ async def get_dashboard(usuario_id: str):
 
 @app.get("/dashboard-content/{usuario_id}", response_class=HTMLResponse)
 async def get_dashboard_content(usuario_id: str):
-    dashboard_path = f"statics/user_{usuario_id}/dashboard_bienestar.html"
+    dashboard_path = f"/mnt/shared/statics/user_{usuario_id}/dashboard_bienestar.html"
     
     if not os.path.exists(dashboard_path):
         raise HTTPException(status_code=404, detail="Dashboard no encontrado")
@@ -5514,7 +5522,7 @@ def generar_graficos_por_categoria_Premium(valores_respuestas):
             # Ajustar el layout con más padding
             plt.tight_layout(pad=3.0)  # Aumenta este valor si necesitas más espacio general
 
-            plt.savefig(f"statics/radar_{categoria.lower()}.png", dpi=300, bbox_inches="tight")
+            plt.savefig(f"/mnt/shared/statics/radar_{categoria.lower()}.png", dpi=300, bbox_inches="tight")
             plt.close()
             
             grupo1 = categorias[:6]
@@ -5566,7 +5574,7 @@ def generar_graficos_por_categoria_Premium(valores_respuestas):
 
         plt.subplots_adjust(bottom=0.4)
         plt.tight_layout()
-        plt.savefig("statics/radar_general_grupo1.png", dpi=300, bbox_inches="tight")
+        plt.savefig("/mnt/shared/statics/radar_general_grupo1.png", dpi=300, bbox_inches="tight")
         plt.close()
 
 
@@ -5617,7 +5625,7 @@ def generar_graficos_por_categoria_Premium(valores_respuestas):
 
         plt.subplots_adjust(bottom=0.4)
         plt.tight_layout()
-        plt.savefig("statics/radar_general_grupo2.png", dpi=300, bbox_inches="tight")
+        plt.savefig("/mnt/shared/statics/radar_general_grupo2.png", dpi=300, bbox_inches="tight")
         plt.close()
 
 def agregar_fondo(c, width, height, background_path):
@@ -5685,7 +5693,7 @@ def generar_recomendaciones_gpt(respuestas_usuario, nombre_usuario):
     
 def generar_pdf_con_analisis(usuario_id):
     """Genera un PDF con un análisis de las respuestas del usuario."""
-    pdf_path = f"statics/analisis_usuario_{usuario_id}.pdf"
+    pdf_path = f"/mnt/shared/statics/analisis_usuario_{usuario_id}.pdf"
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT nombre, apellidos  FROM usuarios WHERE numero_identificacion = %s", (usuario_id,))
@@ -5897,7 +5905,7 @@ def generar_pdf_con_analisis(usuario_id):
     c.drawCentredString(width / 2, y_position, "Análisis General")
 
     y_position -= 40  # Ajuste de espacio para la imagen
-    image_path = "statics/radar_general.png"
+    image_path = "/mnt/shared/statics/radar_general.png"
     c.drawImage(image_path, x_position, y_position - img_height, width=img_width, height=img_height)
 
     # Agregar número de página
@@ -6029,7 +6037,7 @@ def generar_pdf_con_analisis(usuario_id):
         }
     
     for categoria in ["vital", "emocional", "mental", "existencial", "financiera","ambiental"]:
-        image_path = f"statics/radar_{categoria}.png"
+        image_path = f"/mnt/shared/statics/radar_{categoria}.png"
         
         if os.path.exists(image_path):
             c.showPage()
@@ -6261,7 +6269,7 @@ def generar_pdf_con_analisis(usuario_id):
 
 def generar_pdf_con_analisis_Premium(usuario_id):
     """Genera un PDF con un análisis de las respuestas del usuario."""
-    pdf_path = f"statics/analisis_usuario_{usuario_id}.pdf"
+    pdf_path = f"/mnt/shared/statics/analisis_usuario_{usuario_id}.pdf"
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT nombre, apellidos  FROM usuarios WHERE numero_identificacion = %s", (usuario_id,))
@@ -6511,8 +6519,8 @@ def generar_pdf_con_analisis_Premium(usuario_id):
     img_y = y_position - img_height
 
     # Dibujar imágenes
-    c.drawImage("statics/radar_general_grupo1.png", x_left, img_y, width=img_width, height=img_height)
-    c.drawImage("statics/radar_general_grupo2.png", x_right, img_y, width=img_width, height=img_height)
+    c.drawImage("/mnt/shared/statics/radar_general_grupo1.png", x_left, img_y, width=img_width, height=img_height)
+    c.drawImage("/mnt/shared/statics/radar_general_grupo2.png", x_right, img_y, width=img_width, height=img_height)
 
     # Posición Y para los textos debajo de las imágenes
     text_y = img_y - 10  # pequeño espacio después de las imágenes
@@ -6725,7 +6733,7 @@ def generar_pdf_con_analisis_Premium(usuario_id):
 
     # for categoria in ["vital", "emocional", "mental", "existencial", "financiera","ambiental"]:
     for categoria in ["vital", "emocional", "mental", "existencial", "financiera","ambiental","creatividad","mentalidad digital","bienestar social","bienestar profesional","manejo del agotamiento","conexion interior"]:
-        image_path = f"statics/radar_{categoria}.png"
+        image_path = f"/mnt/shared/statics/radar_{categoria}.png"
         
         if os.path.exists(image_path):
             c.showPage()
