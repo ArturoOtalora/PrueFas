@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Form, Request,Query, HTTPException, Response, Request, status 
-from fastapi.responses import HTMLResponse, RedirectResponse,FileResponse
+from fastapi.responses import HTMLResponse, RedirectResponse,FileResponse,JSONResponse
 from fastapi.staticfiles import StaticFiles
 import mysql.connector
 import random
@@ -24,17 +24,19 @@ from email.message import EmailMessage
 import aiosmtplib
 import matplotlib
 import mysql.connector
-from typing import List, Optional
+import plotly.graph_objects as go
+import pandas as pd
+import numpy as np
+from math import pi
+from typing import List, Optional, Dict
+import webbrowser
+# from openai import OpenAI 
 import openai
 import tiktoken
 from dotenv import load_dotenv
 from openai import OpenAI
-
-# import plotly.graph_objects as go
-# import pandas as pd
-# import numpy as np
-# from math import pi
-# import webbrowser
+import logging
+from flask import current_app
 
 # Configurar la conexión a MySQL desde Railway
 DB_HOST = "shuttle.proxy.rlwy.net"
@@ -56,7 +58,7 @@ preguntas_lista_Premium = [
     "¿Consideras que tus experiencias han contribuido a tu calidad de vida o crecimiento personal?", "¿Celebras tus logros o victorias?",
     "¿Cuando siento una emoción intensa, soy capaz de calmarme antes de actuar o tomar decisiones?", "¿Sientes que te adaptas a cambios o nuevas situaciones con facilidad?",
     "¿Tu bienestar emocional es prioridad en tu vida?", "¿Consideras que has manejado bien los sentimientos de impotencia o duda prolongados?",
-    "¿Sientes que tu círculo cercano te anima a lograr tus metas?", "¿te sientes agradecido por los logros obtenidos?",
+    "¿Sientes que tu círculo cercano te anima a lograr tus metas?", "¿Te sientes agradecido por los logros obtenidos?",
     "¿Has reflexionado personalmente o con un profesional sobre tu salud mental en los últimos seis meses?", "¿En qué medida te sientes valorado y respetado por otros?",
     "¿Sientes que la autoimagen que tienes de ti representa tu más alto valor como ser humano?", "¿Cuándo reflexionas de tu valor personal que tan consciente eres del valor que aportas al mundo?",
     "¿Desde lo que hoy haces, lo consideras tu pasión y te motiva para seguir haciéndolo ?", "¿Los pensamientos que más tienes sustentan tu valor mas alto?","¿Cuándo conoces una verdad sobre tu vida la aceptas con facilidad?",
@@ -106,7 +108,6 @@ def get_db_connection():
         database=DB_NAME,
         port=DB_PORT
     )
-
 @app.post("/guardar_usuario")
 def guardar_usuario(
     nombre: str = Form(...),
@@ -126,87 +127,116 @@ def guardar_usuario(
     otraEmpresa: str = Form(None),
     version: str = Form(...) 
 ):
+    # Inicializar las variables como None
+    conn = None
+    cursor = None
     
-    # conn = get_db_connection()
-    # cursor = conn.cursor()  
-      # Determinar el valor final de la empresa
-    empresa_final = otraEmpresa if Empresa == "Otra Empresa" and otraEmpresa else Empresa
-
     try:
+        # Determinar el valor final de la empresa
+        empresa_final = otraEmpresa if Empresa == "Otra Empresa" and otraEmpresa else Empresa
+
         conn = get_db_connection()
         cursor = conn.cursor() 
-
-
-        # cursor.execute("ALTER TABLE datos_contacto DROP COLUMN nivel_territorial")
-        #cursor.execute("""ALTER TABLE datos_contacto MODIFY COLUMN redes_sociales VARCHAR(200)""")
-        # cursor.execute("DELETE FROM respuestasForm WHERE usuario_id = %s", (15152150,))
-        # cursor.execute("""
-        # ALTER TABLE datos_contacto
-        # DROP COLUMN telefono_institucional,
-        # ADD COLUMN voto_presidencial ENUM('Sí','No') NOT NULL,
-        # ADD COLUMN municipio_voto VARCHAR(150),
-        # ADD COLUMN referido VARCHAR(150),
-        # ADD COLUMN redes_sociales TEXT NOT NULL
-        # """)
-
-        # cursor.execute("""
-        # CREATE TABLE IF NOT EXISTS datos_contacto (
-        #     id INT AUTO_INCREMENT PRIMARY KEY,
-        #     nombre_completo VARCHAR(150) NOT NULL,
-        #     documento VARCHAR(50) NOT NULL UNIQUE,
-        #     cargo VARCHAR(100) NOT NULL,
-        #     entidad VARCHAR(150) NOT NULL,
-        #     departamento_municipio VARCHAR(150) NOT NULL,
-        #     nivel_territorial VARCHAR(50) NOT NULL,
-        #     telefono_personal VARCHAR(30) NOT NULL,
-        #     telefono_institucional VARCHAR(30),
-        #     correo VARCHAR(150) NOT NULL,
-        #     direccion VARCHAR(200),
-        #     canales_contacto VARCHAR(100) NOT NULL,
-        #     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        # )
-        # """)
-
 
         # Verificar si el número de identificación ya existe
         cursor.execute("SELECT COUNT(*) FROM usuarios WHERE numero_identificacion = %s", (numero_identificacion,))
         (existe,) = cursor.fetchone()
         
         if existe:
-            cursor.close()
-            conn.close()
-            raise HTTPException(status_code=400, detail="El número de identificación ya está registrado.")
+            # ✅ Ya registrado
+            if version == "Chat":
+                return RedirectResponse(url="/chat", status_code=303)
+            else:
+                html_content = f"""
+                <html>
+                <head>
+                    <title>Ya completaste tu evaluación</title>
+                    <style>
+                        body {{font-family: Arial, sans-serif; background:#f4f6f8; display:flex; justify-content:center; align-items:center; height:100vh;}}
+                        .card {{background:white; padding:30px; border-radius:10px; box-shadow:0 4px 8px rgba(0,0,0,0.1); max-width:400px; text-align:center;}}
+                        h2 {{color:#d9534f;}}
+                        a {{display:inline-block; margin-top:15px; text-decoration:none; color:white; background:#007bff; padding:10px 20px; border-radius:5px;}}
+                        a:hover {{background:#0056b3;}}
+                    </style>
+                </head>
+                <body>
+                    <div class="card">
+                        <h2>Ya completaste tu evaluación</h2>
+                        <p>El número de identificación <b>{numero_identificacion}</b> ya realizó el turing. Debes esperar 90 días para volver a hacerlo.</p>
+                        <a href="/">Volver al inicio</a>
+                    </div>
+                </body>
+                </html>
+                """
+                return HTMLResponse(content=html_content, status_code=400)
+        else:
+            # ✅ No registrado
+            if version == "Chat":
+                html_content = f"""
+                <html>
+                <head>
+                    <title>Acceso denegado</title>
+                    <style>
+                        body {{font-family: Arial, sans-serif; background:#f4f6f8; display:flex; justify-content:center; align-items:center; height:100vh;}}
+                        .card {{background:white; padding:30px; border-radius:10px; box-shadow:0 4px 8px rgba(0,0,0,0.1); max-width:400px; text-align:center;}}
+                        h2 {{color:#d9534f;}}
+                        a {{display:inline-block; margin-top:15px; text-decoration:none; color:white; background:#28a745; padding:10px 20px; border-radius:5px;}}
+                        a:hover {{background:#1e7e34;}}
+                    </style>
+                </head>
+                <body>
+                    <div class="card">
+                        <h2>Acceso denegado</h2>
+                        <p>Debes realizar el turing antes de poder ingresar al chat.</p>
+                        <a href="javascript:history.back()">Volver</a>
+                    </div>
+                </body>
+                </html>
+                """
+                return HTMLResponse(content=html_content, status_code=400)
 
-        # Insertar usuario
-        cursor.execute(
-            """
-            INSERT INTO usuarios (nombre, apellidos, tipo_documento, numero_identificacion, correo, sexo,Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad, Profesion, Empresa)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,%s,%s)
-            """,
-            (nombre, apellidos, tipo_documento, numero_identificacion, correo, sexo, Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad, Profesion, empresa_final)
-        )
-        conn.commit()
+            # Insertar usuario si no existe y no seleccionó Chat
+            cursor.execute(
+                """
+                INSERT INTO usuarios (nombre, apellidos, tipo_documento, numero_identificacion, correo, sexo, Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad, Profesion, Empresa)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (nombre, apellidos, tipo_documento, numero_identificacion, correo, sexo, Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad, Profesion, empresa_final)
+            )
+            conn.commit()
+
+            # Redirección según versión
+            if version == "Esencial":
+                return RedirectResponse(url=f"/preguntas_esencial?usuario_id={numero_identificacion}", status_code=303)
+            elif version == "Evolutiva":
+                return RedirectResponse(url=f"/preguntas_evolutiva?usuario_id={numero_identificacion}", status_code=303)
+            elif version == "Premium":
+                return RedirectResponse(url=f"/preguntas_premium?usuario_id={numero_identificacion}", status_code=303)
+            else:
+                return RedirectResponse(url=f"/preguntas?usuario_id={numero_identificacion}", status_code=303)
+
     except mysql.connector.Error as err:
         print(f"Error al insertar usuario: {err}")
-        return {"status": "error", "message": "Error al guardar el usuario."}
+        return HTMLResponse(
+            content=f"<h2>Error en BD</h2><p>Error al guardar el usuario: {err}</p>",
+            status_code=500
+        )
+    except Exception as err:
+        print(f"Error inesperado: {err}")
+        return HTMLResponse(
+            content=f"<h2>Error interno</h2><p>{err}</p>",
+            status_code=500
+        )
     finally:
-        cursor.close()
-        conn.close()
-
-    if version == "Esencial":
-        return RedirectResponse(url=f"/preguntas_esencial?usuario_id={numero_identificacion}", status_code=303)
-    elif version == "Evolutiva":
-        return RedirectResponse(url=f"/preguntas_evolutiva?usuario_id={numero_identificacion}", status_code=303)
-    elif version == "Premium":
-        return RedirectResponse(url=f"/preguntas_premium?usuario_id={numero_identificacion}", status_code=303)
-    else:
-        return RedirectResponse(url=f"/preguntas?usuario_id={numero_identificacion}", status_code=303)    
+        if cursor is not None:
+            cursor.close()
+        if conn is not None:
+            conn.close()
 
 @app.get("/login", response_class=HTMLResponse)
 def login_form():
     return """
  <!DOCTYPE html>
-<html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
@@ -301,7 +331,7 @@ def login_form():
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
-            }
+            }n
         }
     </style>
 </head>
@@ -348,292 +378,560 @@ def login_form():
     """
 @app.post("/login")
 def login(username: str = Form(...), password: str = Form(...)):
-    if username.lower() == "invitado" and password == "Vital2025.":
-        resp = RedirectResponse(url="/mostrar_pagina", status_code=status.HTTP_302_FOUND)
-        return resp  # <-- este return es necesario
-    return HTMLResponse("<h3>Credenciales incorrectas. <a href='/login'>Volver</a></h3>", status_code=401)
+    usuarios_validos = {
+        "invitado": "invitado",
+        "corevital": "Corevital",
+        "advancevital": "AdvanceVital",
+        "premiumvital": "premiumVital"
+    }
+    clave = "Vital2025."
+    
+    user_key = username.lower()  # normalizamos para comparar
+    
+    if user_key in usuarios_validos and password == clave:
+        # Crear respuesta de redirección
+        resp = RedirectResponse(url="/mostrar_pagina1", status_code=status.HTTP_302_FOUND)
+        # Establecer cookie con el valor exacto (con mayúsculas/minúsculas correctas)
+        resp.set_cookie(key="user_type", value=usuarios_validos[user_key], httponly=True)
+        return resp
+    else:
+        return HTMLResponse(
+            "<h3>Credenciales incorrectas. <a href='/login'>Volver</a></h3>", 
+            status_code=401
+        )
 
-@app.get("/mostrar_pagina", response_class=HTMLResponse)
-def mostrar_pagina():
-        # return RedirectResponse(url="/login")
+@app.get("/mostrar_pagina1", response_class=HTMLResponse)
+def mostrar_pagina1(request: Request):
     return """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Turing - Registro de Usuario</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            background: url('/statics/VITAL.png') no-repeat center center fixed;
-            background-size: contain;
-            background-attachment: fixed;
-            background-color: #f4f4f4;
-            display: flex;
-            flex-direction: column;
-            align-items: center;    
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-            .title-container {
-            text-align: center;
-            font-size: 25px;
-            font-weight: bold;
-            margin-bottom: 30px;
-            margin-top: -20px;
-            color: #2C3E50;
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-            width: 100%;
-            max-width: 800px;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-weight: bold;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-
-        input, select {
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            font-size: 14px;
-        }
-
-        button {
-            background: #2575fc;
-            color: white;
-            padding: 12px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 20px;
-            width: 100%;
-            transition: background 0.3s ease;
-        }
-
-        button:hover {
-            background: #1e5bc6;
-        }
-
-        @media (max-width: 768px) {
-            .form-grid {
-                grid-template-columns: 1fr;
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Ingreso - Bienestar Integral</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+                margin: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
             }
-        }
-    </style>
-</head>
-<body>
-    <div class="title-container">
-        <h1>Registro de Usuario</h1>
-    </div>
-    <div class="container">
-        <form action="/guardar_usuario" method="post">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="nombre">Nombre:</label>
-                    <input type="text" id="nombre" name="nombre" required>
+            .container {
+                background: #fff;
+                padding: 2rem;
+                border-radius: 20px;
+                box-shadow: 0px 6px 20px rgba(0,0,0,0.15);
+                text-align: center;
+                max-width: 400px;
+                width: 100%;
+                animation: fadeIn 1s ease-in-out;
+            }
+            h2 {
+                color: #2d3748;
+                margin-bottom: 1.5rem;
+            }
+            label {
+                display: block;
+                margin: 0.5rem 0 0.2rem;
+                font-weight: 600;
+                color: #4a5568;
+                text-align: left;
+            }
+            select, input {
+                width: 100%;
+                padding: 0.7rem;
+                border: 1px solid #cbd5e0;
+                border-radius: 12px;
+                margin-bottom: 1rem;
+                outline: none;
+                transition: 0.3s;
+            }
+            select:focus, input:focus {
+                border-color: #48bb78;
+                box-shadow: 0 0 6px rgba(72,187,120,0.4);
+            }
+            button {
+                width: 100%;
+                padding: 0.8rem;
+                background: #48bb78;
+                color: white;
+                border: none;
+                border-radius: 12px;
+                font-size: 1rem;
+                font-weight: bold;
+                cursor: pointer;
+                transition: background 0.3s ease;
+            }
+            button:hover {
+                background: #38a169;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>✨ Bienvenido(a) al Portal de Bienestar Integral ✨</h2>
+            <form action="/verificar_usuario" method="post">
+                <label for="tipo_documento">Tipo de Documento</label>
+                <select id="tipo_documento" name="tipo_documento" required>
+                    <option value="CC">Cédula de Ciudadanía</option>
+                    <option value="TI">Tarjeta de Identidad</option>
+                    <option value="CE">Cédula de Extranjería</option>
+                </select>
+                <label for="numero_identificacion">Número de Identificación</label>
+                <input type="text" id="numero_identificacion" name="numero_identificacion" placeholder="Ingresa tu número" required>
+                <button type="submit">Continuar</button>
+            </form>
+        </div>
+    </body>
+    </html>
+    """
+@app.post("/verificar_usuario", response_class=HTMLResponse)
+def verificar_usuario(
+    request: Request,
+    tipo_documento: str = Form(...),
+    numero_identificacion: str = Form(...)
+):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT * FROM usuarios 
+        WHERE tipo_documento = %s AND numero_identificacion = %s
+    """, (tipo_documento, numero_identificacion))
+    
+    usuario = cursor.fetchone()
+    conn.close()
+    
+    if usuario:
+        user_type = request.cookies.get("user_type", "invitado")
+
+        if user_type in ["Corevital", "AdvanceVital", "premiumVital"]:
+            version_options = """
+            <button onclick="window.location.href='/chat'" class="btn-option">
+                <div>
+                    <strong>💬 Chat Interactivo</strong><br>
+                    <span>¿Listo para iniciar tu proceso de transformación? Hablemos.</span>
                 </div>
-                <div class="form-group">
-                    <label for="apellidos">Apellidos:</label>
-                    <input type="text" id="apellidos" name="apellidos" required>
-                </div>
-                <div class="form-group">
-                    <label for="tipo_documento">Tipo de Documento:</label>
-                    <select id="tipo_documento" name="tipo_documento" required>
-                        <option value="CC">Cédula de Ciudadanía</option>
-                        <option value="TI">Tarjeta de Identidad</option>
-                        <option value="CE">Cédula de Extranjería</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="numero_identificacion">Número de Identificación:</label>
-                    <input type="text" id="numero_identificacion" name="numero_identificacion" required>
-                </div>
-                <div class="form-group">
-                    <label for="correo">Correo Electrónico:</label>
-                    <input type="email" id="correo" name="correo" required>
-                </div>
-                <div class="form-group">
-                    <label for="sexo">Sexo:</label>
-                    <select id="sexo" name="sexo" required>
-                        <option value="Masculino">Masculino</option>
-                        <option value="Femenino">Femenino</option>
-                        <option value="Otro">Otro</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="Peso">Peso (KG):</label>
-                    <input type="text" id="Peso" name="Peso" required>
-                </div>
-                <div class="form-group">
-                    <label for="Altura">Altura (M):</label>
-                    <input type="text" id="Altura" name="Altura" required>
-                </div>
-                <div class="form-group">
-                    <label for="rango_edad">Rango de Edad:</label>
-                    <select id="rango_edad" name="rango_edad" required>
-                        <option value="18-25">18 a 25 años</option>
-                        <option value="26-40">26 a 40 años</option>
-                        <option value="41-55">41 a 55 años</option>
-                        <option value="56-76">56 a 76 años</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="grado_escolaridad">Grado de Escolaridad:</label>
-                    <select id="grado_escolaridad" name="grado_escolaridad" required>
-                        <option value="Basica Primaria">Básica Primaria</option>
-                        <option value="Bachiller">Bachiller</option>
-                        <option value="Pregado">Pregrado</option>
-                        <option value="Posgrado">Posgrado</option>
-                        <option value="Doctorado">Doctorado</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="antiguedad">Antigüedad laborando en la compañía:</label>
-                    <select id="antiguedad" name="antiguedad" required>
-                        <option value="Menos de 1 año">Menos de 1 año</option>
-                        <option value="Entre 1 y 2 años ">Entre 1 y 2 años </option>
-                        <option value="Entre 2 y 5 años">Entre 2 y 5 años</option>
-                        <option value="Mas de 5 años">Mas de 5 años</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="ciudad">Ciudad:</label>
-                    <input type="text" id="ciudad" name="ciudad" required>
-                </div>
-                <div class="form-group">
-                    <label for="Profesion">Profesión:</label>
-                    <input type="text" id="Profesion" name="Profesion" required>
-                </div>
-               <div class="form-group">
-                    <label for="Empresa">Empresa:</label>
-                    <select id="Empresa" name="Empresa" required onchange="toggleEmpresaInput(this)">
-                        <option value="PARTICULAR">PARTICULAR</option>
-                        <option value="SIES SALUD">SIES SALUD</option>
-                        <option value="AZISTIA">AZISTIA</option>
-                        <option value="HOTEL SONATA 44">HOTEL SONATA 44</option>
-                        <option value="PTC-ASSISTAN">PTC-AZISTIA</option>
-                        <option value="Otra Empresa">Otra Empresa</option>
-                    </select>
-                </div>
-               <div class="form-group hidden-input" id="otraEmpresaGroup" style="display: none; margin-top: 10px;">
-                <label for="otraEmpresa">Nombre de la Empresa:</label>
-                        <div>
-                            <input type="text" id="otraEmpresa" name="otraEmpresa" style="margin-top: 5px;">
-                        </div>
-                    </div>
-            <div class="form-group" style="grid-column: 1 / -1; margin-top: 10px;">
-                <label style="font-weight: normal;">
-                    <input type="checkbox" name="autorizacion_datos" required>
-                    Autorizo de manera libre, voluntaria, previa, explícita e informada a Vital Value, para que en 
-                    los términos legales establecidos, Se informa que los datos y la información de carácter personal suministrados,
-                    serán objeto de tratamiento (únicamente estadístico) de acuerdo con lo establecido en la Ley 1581 de 2012,
-                    el Decreto 1377 de 2013. La información que usted responda será totalmente confidencial.
-                    En caso de no autorizar el tratamiento, la recolección y/o el almacenamiento de la información,
-                    no continúe con el diligenciamiento de la encuesta.
-                </label>
+            </button>
+            """
+        else:
+            version_options = "<p style='color:#e53e3e;'>⚠️ No tienes acceso a versiones especiales.</p>"
+
+        return f"""
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Bienvenido</title>
+            <style>
+                body {{
+                    margin: 0;
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background: linear-gradient(135deg, #c3ecb2 0%, #7dd3fc 100%);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                }}
+                .card {{
+                    background: white;
+                    padding: 2rem;
+                    border-radius: 20px;
+                    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+                    text-align: center;
+                    max-width: 500px;
+                    width: 100%;
+                    animation: fadeIn 0.8s ease-in-out;
+                }}
+                h2 {{
+                    color: #2f855a;
+                    margin-bottom: 0.5rem;
+                }}
+                p {{
+                    color: #4a5568;
+                    margin: 0.3rem 0;
+                }}
+                h3 {{
+                    margin-top: 1.5rem;
+                    color: #2d3748;
+                }}
+                .btn-option {{
+                    width: 100%;
+                    padding: 15px 20px;
+                    margin-top: 1rem;
+                    border: none;
+                    border-radius: 15px;
+                    background: #48bb78;
+                    color: white;
+                    font-size: 16px;
+                    font-weight: bold;
+                    text-align: left;
+                    cursor: pointer;
+                    transition: transform 0.2s ease, background 0.3s ease;
+                    box-shadow: 0px 6px 12px rgba(0,0,0,0.1);
+                }}
+                .btn-option span {{
+                    font-size: 14px;
+                    font-weight: normal;
+                    color: #e6fffa;
+                }}
+                .btn-option:hover {{
+                    transform: scale(1.03);
+                    background: #38a169;
+                }}
+                @keyframes fadeIn {{
+                    from {{ opacity: 0; transform: translateY(-15px); }}
+                    to {{ opacity: 1; transform: translateY(0); }}
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h2>🌿 Bienvenido, {usuario['nombre']} {usuario['apellidos']}</h2>
+                <p><strong>Correo:</strong> {usuario['correo']}</p>
+                <p><strong>Ciudad:</strong> {usuario['ciudad']}</p>
+                <h3>Selecciona tu versión</h3>
+                {version_options}
             </div>
-            <button type="submit" id="btnRegistrar">Registrar</button>
-        </form>
+        </body>
+        </html>
+        """
+
+    return RedirectResponse(url="/mostrar_pagina", status_code=302)
+@app.get("/mostrar_pagina", response_class=HTMLResponse)
+def mostrar_pagina(request: Request):  # Añadir el parámetro request
+    user_type = request.cookies.get("user_type", "invitado")
+    
+    # Determinar qué opciones mostrar según el tipo de usuario
+       # Determinar qué opciones mostrar según el tipo de usuario
+    if user_type == "Corevital":
+        version_options = """
+        <!-- Versión Esencial -->
+        <button onclick="seleccionarVersion('Esencial')" style="padding: 15px 20px; border: none; border-radius: 10px; background: #E3F2FD; color: #1565C0; font-size: 16px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer;">
+            <strong>🌱 Versión Esencial – 6 Dimensiones</strong><br>
+            <span style="font-size: 14px; color: #0D47A1;">Lo fundamental para transformar el bienestar desde la raíz.</span>
+        </button>
+        <!-- Chat Interactivo -->
+        <button onclick="seleccionarVersion('Chat')" style="padding: 15px 20px; border: none; border-radius: 10px; background: #E8F5E9; color: #2E7D32; font-size: 16px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer;">
+            <div>
+                <strong>💬 Chat Interactivo</strong><br>
+                <span style="font-size: 14px; color: #388E3C;">¿listo para iniciar tu proceso de transformación? Hablemos.</span>
+            </div>
+        </button>
+        """
+    elif user_type == "AdvanceVital":
+        version_options = """
+        <!-- Versión Evolutiva -->
+        <button onclick="seleccionarVersion('Evolutiva')" style="padding: 15px 20px; border: none; border-radius: 10px; background: #E8EAF6; color: #3949AB; font-size: 16px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer;">
+            <strong>🌿 Versión Evolutiva – 6 Dimensiones Expandidas</strong><br>
+            <span style="font-size: 14px; color: #283593;">Expande la comprensión y activa procesos de mejora sostenibles.</span>
+        </button>
+        <!-- Chat Interactivo -->
+        <button onclick="seleccionarVersion('Chat')" style="padding: 15px 20px; border: none; border-radius: 10px; background: #E8F5E9; color: #2E7D32; font-size: 16px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer;">
+            <div>
+                <strong>💬 Chat Interactivo</strong><br>
+                <span style="font-size: 14px; color: #388E3C;">¿listo para iniciar tu proceso de transformación? Hablemos.</span>
+            </div>
+        </button>
+        """
+    elif user_type == "premiumVital":
+        version_options = """
+        <!-- Versión Premium -->
+        <button onclick="seleccionarVersion('Premium')" style="padding: 15px 20px; border: none; border-radius: 10px; background: #F3E5F5; color: #7B1FA2; font-size: 16px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer;">
+            <strong>🌟 Versión Premium – 12 Dimensiones</strong><br>
+            <span style="font-size: 14px; color: #6A1B9A;">Lo integral para transformar tu estado natural y mayormente adaptado.</span>
+        </button>
+        <!-- Chat Interactivo -->
+        <button onclick="seleccionarVersion('Chat')" style="padding: 15px 20px; border: none; border-radius: 10px; background: #E8F5E9; color: #2E7D32; font-size: 16px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer;">
+            <div>
+                <strong>💬 Chat Interactivo</strong><br>
+                <span style="font-size: 14px; color: #388E3C;">¿listo para iniciar tu proceso de transformación? Hablemos.</span>
+            </div>
+        </button>
+        """
+    else:  # usuario invitado
+        version_options = """
+        <!-- Versión Esencial -->
+        <button onclick="seleccionarVersion('Esencial')" style="padding: 15px 20px; border: none; border-radius: 10px; background: #E3F2FD; color: #1565C0; font-size: 16px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer;">
+            <strong>🌱 Versión Esencial – 6 Dimensiones</strong><br>
+            <span style="font-size: 14px; color: #0D47A1;">Lo fundamental para transformar el bienestar desde la raíz.</span>
+        </button>
+        <!-- Chat Interactivo -->
+        <button onclick="seleccionarVersion('Chat')" style="padding: 15px 20px; border: none; border-radius: 10px; background: #E8F5E9; color: #2E7D32; font-size: 16px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer;">
+            <div>
+                <strong>💬 Chat Interactivo</strong><br>
+                <span style="font-size: 14px; color: #388E3C;">¿listo para iniciar tu proceso de transformación? Hablemos.</span>
+            </div>
+        </button>
+        """
+    
+    # Retornar el HTML con las opciones adecuadas
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Turing - Registro de Usuario</title>
+        <style>
+            * {{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }}
+
+            body {{
+                font-family: Arial, sans-serif;
+                background: url('/statics/VITAL.png') no-repeat center center fixed;
+                background-size: contain;
+                background-attachment: fixed;
+                background-color: #f4f4f4;
+                display: flex;
+                flex-direction: column;
+                align-items: center;    
+                justify-content: center;
+                min-height: 100vh;
+                padding: 20px;
+            }}
+
+            .title-container {{
+                text-align: center;
+                font-size: 25px;
+                font-weight: bold;
+                margin-bottom: 30px;
+                margin-top: -20px;
+                color: #2C3E50;
+            }}
+
+            .container {{
+                background: rgba(255, 255, 255, 0.9);
+                padding: 25px;
+                border-radius: 10px;
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+                width: 100%;
+                max-width: 800px;
+            }}
+
+            .form-grid {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }}
+
+            .form-group {{
+                display: flex;
+                flex-direction: column;
+            }}
+
+            label {{
+                font-weight: bold;
+                margin-bottom: 5px;
+                font-size: 14px;
+            }}
+
+            input, select {{
+                padding: 10px;
+                border-radius: 5px;
+                border: 1px solid #ccc;
+                font-size: 14px;
+            }}
+
+            button {{
+                background: #2575fc;
+                color: white;
+                padding: 12px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+                margin-top: 20px;
+                width: 100%;
+                transition: background 0.3s ease;
+            }}
+
+            button:hover {{
+                background: #1e5bc6;
+            }}
+
+            @media (max-width: 768px) {{
+                .form-grid {{
+                    grid-template-columns: 1fr;
+                }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="title-container">
+            <h1>Registro de Usuario</h1>
+        </div>
+        <div class="container">
+            <form action="/guardar_usuario" method="post">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="nombre">Nombre:</label>
+                        <input type="text" id="nombre" name="nombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="apellidos">Apellidos:</label>
+                        <input type="text" id="apellidos" name="apellidos" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tipo_documento">Tipo de Documento:</label>
+                        <select id="tipo_documento" name="tipo_documento" required>
+                            <option value="CC">Cédula de Ciudadanía</option>
+                            <option value="TI">Tarjeta de Identidad</option>
+                            <option value="CE">Cédula de Extranjería</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="numero_identificacion">Número de Identificación:</label>
+                        <input type="text" id="numero_identificacion" name="numero_identificacion" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="correo">Correo Electrónico:</label>
+                        <input type="email" id="correo" name="correo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sexo">Sexo:</label>
+                        <select id="sexo" name="sexo" required>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Femenino">Femenino</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="Peso">Peso (KG):</label>
+                        <input type="text" id="Peso" name="Peso" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="Altura">Altura (M):</label>
+                        <input type="text" id="Altura" name="Altura" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="rango_edad">Rango de Edad:</label>
+                        <select id="rango_edad" name="rango_edad" required>
+                            <option value="18-25">18 a 25 años</option>
+                            <option value="26-40">26 a 40 años</option>
+                            <option value="41-55">41 a 55 años</option>
+                            <option value="56-76">56 a 76 años</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="grado_escolaridad">Grado de Escolaridad:</label>
+                        <select id="grado_escolaridad" name="grado_escolaridad" required>
+                            <option value="Basica Primaria">Básica Primaria</option>
+                            <option value="Bachiller">Bachiller</option>
+                            <option value="Pregado">Pregrado</option>
+                            <option value="Posgrado">Posgrado</option>
+                            <option value="Doctorado">Doctorado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="antiguedad">Antigüedad laborando en la compañía:</label>
+                        <select id="antiguedad" name="antiguedad" required>
+                            <option value="Menos de 1 año">Menos de 1 año</option>
+                            <option value="Entre 1 y 2 años ">Entre 1 y 2 años </option>
+                            <option value="Entre 2 y 5 años">Entre 2 y 5 años</option>
+                            <option value="Mas de 5 años">Mas de 5 años</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ciudad">Ciudad:</label>
+                        <input type="text" id="ciudad" name="ciudad" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="Profesion">Profesión:</label>
+                        <input type="text" id="Profesion" name="Profesion" required>
+                    </div>
+                   <div class="form-group">
+                        <label for="Empresa">Empresa:</label>
+                        <select id="Empresa" name="Empresa" required onchange="toggleEmpresaInput(this)">
+                            <option value="PARTICULAR">PARTICULAR</option>
+                            <option value="SIES SALUD">SIES SALUD</option>
+                            <option value="AZISTIA">AZISTIA</option>
+                            <option value="HOTEL SONATA 44">HOTEL SONATA 44</option>
+                            <option value="PTC-ASSISTAN">PTC-AZISTIA</option>
+                            <option value="Otra Empresa">Otra Empresa</option>
+                        </select>
+                    </div>
+                   <div class="form-group hidden-input" id="otraEmpresaGroup" style="display: none; margin-top: 10px;">
+                    <label for="otraEmpresa">Nombre de la Empresa:</label>
+                            <div>
+                                <input type="text" id="otraEmpresa" name="otraEmpresa" style="margin-top: 5px;">
+                            </div>
+                        </div>
+                <div class="form-group" style="grid-column: 1 / -1; margin-top: 10px;">
+                    <label style="font-weight: normal;">
+                        <input type="checkbox" name="autorizacion_datos" required>
+                        Autorizo de manera libre, voluntaria, previa, explícita e informada a Vital Value, para que en 
+                        los términos legales establecidos, Se informa que los datos y la información de carácter personal suministrados,
+                        serán objeto de tratamiento (únicamente estadístico) de acuerdo con lo establecido en la Ley 1581 de 2012,
+                        el Decreto 1377 de 2013. La información que usted responda será totalmente confidencial.
+                        En caso de no autorizar el tratamiento, la recolección y/o el almacenamiento de la información,
+                        no continúe con el diligenciamiento de la encuesta.
+                    </label>
+                </div>
+                <button type="submit" id="btnRegistrar">Registrar</button>
+            </form>
+        </div>
+         <script>
+            function toggleEmpresaInput(select) {{
+                const otraEmpresaGroup = document.getElementById("otraEmpresaGroup");
+                otraEmpresaGroup.style.display = select.value === "Otra Empresa" ? "block" : "none";
+            }}
+        </script>
+    </body>
+    <!-- Modal de Selección de Versión con colores coherentes al logo azul -->
+    <div id="versionModal" style="display: none; position: fixed; top: 0; left: 0;
+         width: 100%; height: 100%; background: rgba(0,0,0,0.6); 
+         justify-content: center; align-items: center; z-index: 1000; font-family: 'Segoe UI', sans-serif;">
+      <div style="background: #fff; padding: 30px; border-radius: 12px; text-align: center; max-width: 550px; width: 90%; box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
+        <h2 style="margin-bottom: 15px; font-size: 24px; color: #0D47A1;">Selecciona una Versión</h2>
+        <p style="margin-bottom: 25px; font-size: 16px; color: #555;">¿Con qué versión deseas continuar?</p>
+
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+          {version_options}
+        </div>
+      </div>
     </div>
-     <script>
-        function toggleEmpresaInput(select) {
-            const otraEmpresaGroup = document.getElementById("otraEmpresaGroup");
-            otraEmpresaGroup.style.display = select.value === "Otra Empresa" ? "block" : "none";
-        }
-    </script>
-</body>
-<!-- Modal de Selección de Versión con colores coherentes al logo azul -->
-<div id="versionModal" style="display: none; position: fixed; top: 0; left: 0;
-     width: 100%; height: 100%; background: rgba(0,0,0,0.6); 
-     justify-content: center; align-items: center; z-index: 1000; font-family: 'Segoe UI', sans-serif;">
-  <div style="background: #fff; padding: 30px; border-radius: 12px; text-align: center; max-width: 550px; width: 90%; box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
-    <h2 style="margin-bottom: 15px; font-size: 24px; color: #0D47A1;">Selecciona una Versión</h2>
-    <p style="margin-bottom: 25px; font-size: 16px; color: #555;">¿Con qué versión deseas continuar?</p>
+    <script>
+          const form = document.querySelector("form");
+        const modal = document.getElementById("versionModal");
+        const btnRegistrar = document.getElementById("btnRegistrar");
 
-    <div style="display: flex; flex-direction: column; gap: 15px;">
+        let fueClickEnRegistrar = false;
 
-      <!-- Versión Esencial -->
-      <button onclick="seleccionarVersion('Esencial')" style="padding: 15px 20px; border: none; border-radius: 10px;
-              background: #E3F2FD; color: #1565C0; font-size: 16px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer;">
-        <strong>🌱 Versión Esencial – 6 Dimensiones</strong><br>
-        <span style="font-size: 14px; color: #0D47A1;">Lo fundamental para transformar el bienestar desde la raíz.</span>
-      </button>
+        btnRegistrar.addEventListener("click", function (e) {{
+            e.preventDefault();
 
-      <!-- Versión Evolutiva -->
-      <button onclick="seleccionarVersion('Evolutiva')" style="padding: 15px 20px; border: none; border-radius: 10px;
-              background: #E8EAF6; color: #3949AB; font-size: 16px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer;">
-        <strong>🌿  Versión Evolutiva – 6 Dimensiones Expandidas</strong><br>
-        <span style="font-size: 14px; color: #283593;">Expande la comprensión y activa procesos de mejora sostenibles.</span>
-      </button>
+            // Validar que todos los campos requeridos estén diligenciados
+            if (!form.checkValidity()) {{
+                form.reportValidity(); // Muestra los mensajes de validación del navegador
+                return;
+            }}
 
-      <!-- Versión Trascendente -->
-      <button onclick="seleccionarVersion('Premium')" style="padding: 15px 20px; border: none; border-radius: 10px;
-              background: #F3E5F5; color: #7B1FA2; font-size: 16px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer;">
-        <strong>🌟 Versión Premium – 12 Dimensiones</strong><br>
-        <span style="font-size: 14px; color: #6A1B9A;">Lo integral para transformar tu estado natural y mayormente adaptado.</span>
-      </button>
+            // Validar que la casilla de autorización esté marcada
+            const autorizacion = form.querySelector("input[name='autorizacion_datos']");
+            if (!autorizacion.checked) {{
+                alert("Debes autorizar el tratamiento de datos para continuar.");
+                return;
+            }}
 
-    </div>
-  </div>
-</div>
-<script>
-      const form = document.querySelector("form");
-    const modal = document.getElementById("versionModal");
-    const btnRegistrar = document.getElementById("btnRegistrar");
+            // Si todo es válido, mostrar el modal
+            fueClickEnRegistrar = true;
+            modal.style.display = "flex";
+        }});
 
-    let fueClickEnRegistrar = false;
-
-    btnRegistrar.addEventListener("click", function (e) {
-        e.preventDefault();
-
-        // Validar que todos los campos requeridos estén diligenciados
-        if (!form.checkValidity()) {
-            form.reportValidity(); // Muestra los mensajes de validación del navegador
-            return;
-        }
-
-        // Validar que la casilla de autorización esté marcada
-        const autorizacion = form.querySelector("input[name='autorizacion_datos']");
-        if (!autorizacion.checked) {
-            alert("Debes autorizar el tratamiento de datos para continuar.");
-            return;
-        }
-
-        // Si todo es válido, mostrar el modal
-        fueClickEnRegistrar = true;
-        modal.style.display = "flex";
-    });
-
-    function seleccionarVersion(version) {
+        function seleccionarVersion(version) {{
         if (!fueClickEnRegistrar) return;
 
+        // Crear campo oculto con la versión seleccionada
         const inputHidden = document.createElement("input");
         inputHidden.type = "hidden";
         inputHidden.name = "version";
@@ -643,175 +941,175 @@ def mostrar_pagina():
         modal.style.display = "none";
         fueClickEnRegistrar = false;
         form.submit();
+    }}
+
+        function toggleEmpresaInput(select) {{
+            const otraEmpresaGroup = document.getElementById("otraEmpresaGroup");
+            otraEmpresaGroup.style.display = select.value === "Otra Empresa" ? "block" : "none";
+        }}
+    </script>
+    </html>
+    """
+load_dotenv() 
+# Configuración inicial
+def configure_openai():
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY no está en .env")
+    return {
+        "api_key": api_key,
+        "model_name": "gpt-3.5-turbo",
+        "context_tokens": 4096,  # Ajusta según tus necesidades
+        "response_tokens": 500   # Ajusta según tus necesidades
     }
 
-    function toggleEmpresaInput(select) {
-        const otraEmpresaGroup = document.getElementById("otraEmpresaGroup");
-        otraEmpresaGroup.style.display = select.value === "Otra Empresa" ? "block" : "none";
-    }
-</script>
-</html>
-    """
-    load_dotenv() 
-    # Configuración inicial
-    def configure_openai():
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY no está en .env")
-        return {
-            "api_key": api_key,
-            "model_name": "gpt-3.5-turbo",
-            "context_tokens": 4096,  # Ajusta según tus necesidades
-            "response_tokens": 500   # Ajusta según tus necesidades
-        }
-
-    # Inicialización del cliente
-    try:
-        config = configure_openai()
-        client = OpenAI(api_key=config["api_key"])
-        token_encoder = tiktoken.encoding_for_model(config["model_name"])
-        print("✅ OpenAI listo")
-    except Exception as e:
-        print(f"❌ Error: {str(e)}")
-        client = None
-
-    # Inicializar configuración y cliente
-    try:
-        config = configure_openai()
-        client = OpenAI(api_key=config["api_key"])
-        token_encoder = tiktoken.encoding_for_model(config["model_name"])
-        print("OpenAI configurado correctamente")
-    except Exception as e:
-        print(f"Error inicializando OpenAI: {str(e)}")
-        client = None
-
-    def get_token_encoder(model_name: str):
-        """Obtiene el encoder de tokens adecuado"""
-        try:
-            return tiktoken.encoding_for_model(model_name)
-        except:
-            return tiktoken.get_encoding("cl100k_base")
-
-    # Gestión del prompt
-    def get_system_prompt(emotion_context: str = "") -> str:
-        """Genera el prompt del sistema con contexto de emociones"""
-        return f"""
-    En adelante posiciónate como un terapeuta donde eres CimaBot, un asistente virtual de salud emocional con las siguientes características 
-    1. Personalidad: Empático (centrándose siempre y directamente en los recursos y la capacidad de acción, no en describir el estado de baja vibración), compasivo, profesional, cercano, paciente y no juzgador, alentador y positivo.
-    2. Funcionalidades:
-    - Posicionándote como un psicólogo y mentoring Life coaching, donde todo cambio parte en base al Ser.
-    -Realizar acompañamiento emocional y mental para el equilibrio de bienestar integral en cada una de las siguientes dimensiones: Financiera, emocional, vital corporal, ambiental, existencial y mental.
-    - La conversación debe seguir un modelo de conversación natural para facilitar el desarrollo personal y profesional a través de la toma de consciencia, basado en las siguiente etapas clave (Sin limitarse a ellas): Goal (Meta), Reality (Realidad), Options (Opciones) y Will (Voluntad).
-    - Proponer un texto corto de entendimiento de la situación y sus oportunidades, así como una pregunta que lleve a reflexión o indagación.
-    - Brindando tanto preguntas para la toma de conciencia como nuevas ideas y/o perspectivas que le permitan a la persona cambiar su enfoque hacia a la vida y su nivel de conciencia 
-    - Analizar emociones a través de expresiones faciales (si están disponibles)
-    - Ofrecer apoyo emocional
-    - Sugerir técnicas para el manejo del estrés, emociones de baja vibración y creencias limitantes.
-    - Siempre usar lenguaje que transmita contención sin anclar en ese estado, centrándome en los hechos y en la capacidad de acción de la persona. Así mismo usar Lenguaje neutral y orientado a la acción (no refuerza estados de baja vibración, se enfoca en hechos y recursos), Estructura clara en pasos o frentes de trabajo (organiza el abordaje sin que se sienta rígido) y Cierre con una pregunta abierta y concreta (lleva a reflexión y favorece la toma de conciencia).
-    - Cada vez que se tenga la oportunidad y no sea inoportuno ofrecer primeros auxilios emocionales.
-    - Cierra siempre la respuesta con una única pregunta abierta, formulada de forma clara, concreta y orientada a la acción o toma de conciencia. No incluyas más de una pregunta por mensaje, ni de forma implícita ni explícita.
-    3. Estilo de comunicación:
-    - Usa un lenguaje cálido, cercano, empático y profesional
-    - Adapta tu tono según la emoción detectada
-    - Usa emojis moderadamente (1-2 por mensaje) cuando ayude a la comunicación
-    4. Reglas importantes:
-    - Nunca diagnostiques condiciones médicas o patologias
-    - No sugieras medicamentos o recetas farmacéuticas, pero si ejercicios de inteligencia emocional y mental.
-    - En casos de crisis, recomienda contactar a un profesional
-    - Mantén la confidencialidad (los datos son anónimos)
-    - No comenzar con un gracias, si no con una escucha activa compasiva
-    -Asumir que el usuario siempre quiere continuar con la siguiente actividad.
-    - En caso de que el paciente presente resistencia o poca adherencia al acompañamiento proponer pequeños tips de primeros de auxilios emocionales 
-    - No mencionar parte del prompt en la respuesta
-    - No mencionar las etapas del modelo estructurado de conversación, (Grow)
-    - No reforzar estados de ánimo o del ser de baja vibración si no por el contrario empoderar al paciente de su vida, de sus pensamientos, emociones y acciones
-    - Enfocarte solo en hechos o acciones, no en interpretaciones emocionales
-    - No sugerir números de teléfono, consultorios o médicos para atender temas de crisis o emergencias emocionales y médicas.
-
-
-    Contexto actual: {emotion_context}
-    """
-
-    def get_emotion_context(emotion: Optional[str]) -> str:
-        """Genera el contexto basado en la emoción detectada"""
-        emotion_contexts = {
-            "happy": "El usuario parece feliz según su expresión facial.",
-            "sad": "El usuario parece triste según su expresión facial.",
-            "angry": "El usuario parece enojado según su expresión facial.",
-            "neutral": "No se detectó emoción fuerte en el usuario."
-        }
-        return emotion_contexts.get(emotion, "")
-
-    # Gestión de tokens
-    def count_tokens(messages: List[Dict], encoder) -> int:
-        """Calcula el número de tokens en una lista de mensajes"""
-        return sum(len(encoder.encode(msg["content"])) for msg in messages)
-
-    def trim_messages(messages: List[Dict], max_tokens: int, encoder) -> List[Dict]:
-        """Reduce el historial para no exceder el límite de tokens"""
-        current_tokens = count_tokens(messages, encoder)
-        
-        while current_tokens > max_tokens and len(messages) > 1:
-            if len(messages) > 2 and messages[1]['role'] == 'user':
-                removed = messages.pop(1)
-                current_tokens -= len(encoder.encode(removed["content"]))
-            else:
-                break
-                
-        return messages
-
-    # Configuración inicial al iniciar la aplicación
+# Inicialización del cliente
+try:
     config = configure_openai()
-    openai.api_key = config["api_key"]
-    token_encoder = get_token_encoder(config["model_name"])
+    client = OpenAI(api_key=config["api_key"])
+    token_encoder = tiktoken.encoding_for_model(config["model_name"])
+    print("✅ OpenAI listo")
+except Exception as e:
+    print(f"❌ Error: {str(e)}")
+    client = None
 
-    @app.post("/chat-api")
-    async def chat_with_gpt(request: Request):
-        try:
-            if client is None:
-             raise HTTPException(
-                status_code=500,
-                detail="El cliente de OpenAI no está configurado correctamente."
-            )
-            data = await request.json()
-            user_messages = data.get("messages", [])
-            emotion = data.get("emotion", None)
+# Inicializar configuración y cliente
+try:
+    config = configure_openai()
+    client = OpenAI(api_key=config["api_key"])
+    token_encoder = tiktoken.encoding_for_model(config["model_name"])
+    print("OpenAI configurado correctamente")
+except Exception as e:
+    print(f"Error inicializando OpenAI: {str(e)}")
+    client = None
 
-            # Construir mensajes
-            messages = [
-                {"role": "system", "content": get_system_prompt(get_emotion_context(emotion))},
-                *user_messages
-            ]
+def get_token_encoder(model_name: str):
+    """Obtiene el encoder de tokens adecuado"""
+    try:
+        return tiktoken.encoding_for_model(model_name)
+    except:
+        return tiktoken.get_encoding("cl100k_base")
 
-            # Ajustar historial
-            messages = trim_messages(
-                messages,
-                config["context_tokens"],
-                token_encoder
-            )
+# Gestión del prompt
+def get_system_prompt(emotion_context: str = "") -> str:
+    """Genera el prompt del sistema con contexto de emociones"""
+    return f"""
+En adelante posiciónate como un terapeuta donde eres CimaBot, un asistente virtual de salud emocional con las siguientes características 
+1. Personalidad: Empático (centrándose siempre y directamente en los recursos y la capacidad de acción, no en describir el estado de baja vibración), compasivo, profesional, cercano, paciente y no juzgador, alentador y positivo.
+2. Funcionalidades:
+- Posicionándote como un psicólogo y mentoring Life coaching, donde todo cambio parte en base al Ser.
+-Realizar acompañamiento emocional y mental para el equilibrio de bienestar integral en cada una de las siguientes dimensiones: Financiera, emocional, vital corporal, ambiental, existencial y mental.
+- La conversación debe seguir un modelo de conversación natural para facilitar el desarrollo personal y profesional a través de la toma de consciencia, basado en las siguiente etapas clave (Sin limitarse a ellas): Goal (Meta), Reality (Realidad), Options (Opciones) y Will (Voluntad).
+- Proponer un texto corto de entendimiento de la situación y sus oportunidades, así como una pregunta que lleve a reflexión o indagación.
+- Brindando tanto preguntas para la toma de conciencia como nuevas ideas y/o perspectivas que le permitan a la persona cambiar su enfoque hacia a la vida y su nivel de conciencia 
+- Analizar emociones a través de expresiones faciales (si están disponibles)
+- Ofrecer apoyo emocional
+- Sugerir técnicas para el manejo del estrés, emociones de baja vibración y creencias limitantes.
+- Siempre usar lenguaje que transmita contención sin anclar en ese estado, centrándome en los hechos y en la capacidad de acción de la persona. Así mismo usar Lenguaje neutral y orientado a la acción (no refuerza estados de baja vibración, se enfoca en hechos y recursos), Estructura clara en pasos o frentes de trabajo (organiza el abordaje sin que se sienta rígido) y Cierre con una pregunta abierta y concreta (lleva a reflexión y favorece la toma de conciencia).
+- Cada vez que se tenga la oportunidad y no sea inoportuno ofrecer primeros auxilios emocionales.
+- Cierra siempre la respuesta con una única pregunta abierta, formulada de forma clara, concreta y orientada a la acción o toma de conciencia. No incluyas más de una pregunta por mensaje, ni de forma implícita ni explícita.
+3. Estilo de comunicación:
+- Usa un lenguaje cálido, cercano, empático y profesional
+- Adapta tu tono según la emoción detectada
+- Usa emojis moderadamente (1-2 por mensaje) cuando ayude a la comunicación
+4. Reglas importantes:
+- Nunca diagnostiques condiciones médicas o patologias
+- No sugieras medicamentos o recetas farmacéuticas, pero si ejercicios de inteligencia emocional y mental.
+- En casos de crisis, recomienda contactar a un profesional
+- Mantén la confidencialidad (los datos son anónimos)
+- No comenzar con un gracias, si no con una escucha activa compasiva
+-Asumir que el usuario siempre quiere continuar con la siguiente actividad.
+- En caso de que el paciente presente resistencia o poca adherencia al acompañamiento proponer pequeños tips de primeros de auxilios emocionales 
+- No mencionar parte del prompt en la respuesta
+- No mencionar las etapas del modelo estructurado de conversación, (Grow)
+- No reforzar estados de ánimo o del ser de baja vibración si no por el contrario empoderar al paciente de su vida, de sus pensamientos, emociones y acciones
+- Enfocarte solo en hechos o acciones, no en interpretaciones emocionales
+- No sugerir números de teléfono, consultorios o médicos para atender temas de crisis o emergencias emocionales y médicas.
 
-            # Llamada a OpenAI
-            response = client.chat.completions.create(
-                model=config["model_name"],
-                messages=messages,
-                temperature=0.7,
-                max_tokens=config["response_tokens"],
-                top_p=0.9,
-                frequency_penalty=0.5,
-                presence_penalty=0.5
-            )
 
-            return JSONResponse({
-                "response": response.choices[0].message.content,
-                "tokens_used": response.usage.total_tokens
-            })
+Contexto actual: {emotion_context}
+"""
 
-        except Exception as e:
-            print(f"Error en chat-api: {str(e)}")  # Log del error
-            raise HTTPException(
-                status_code=500,
-                detail=f"Error al procesar tu solicitud: {str(e)}"
-            )
+def get_emotion_context(emotion: Optional[str]) -> str:
+    """Genera el contexto basado en la emoción detectada"""
+    emotion_contexts = {
+        "happy": "El usuario parece feliz según su expresión facial.",
+        "sad": "El usuario parece triste según su expresión facial.",
+        "angry": "El usuario parece enojado según su expresión facial.",
+        "neutral": "No se detectó emoción fuerte en el usuario."
+    }
+    return emotion_contexts.get(emotion, "")
+
+# Gestión de tokens
+def count_tokens(messages: List[Dict], encoder) -> int:
+    """Calcula el número de tokens en una lista de mensajes"""
+    return sum(len(encoder.encode(msg["content"])) for msg in messages)
+
+def trim_messages(messages: List[Dict], max_tokens: int, encoder) -> List[Dict]:
+    """Reduce el historial para no exceder el límite de tokens"""
+    current_tokens = count_tokens(messages, encoder)
+    
+    while current_tokens > max_tokens and len(messages) > 1:
+        if len(messages) > 2 and messages[1]['role'] == 'user':
+            removed = messages.pop(1)
+            current_tokens -= len(encoder.encode(removed["content"]))
+        else:
+            break
+            
+    return messages
+
+# Configuración inicial al iniciar la aplicación
+config = configure_openai()
+openai.api_key = config["api_key"]
+token_encoder = get_token_encoder(config["model_name"])
+
+@app.post("/chat-api")
+async def chat_with_gpt(request: Request):
+    try:
+        if client is None:
+         raise HTTPException(
+            status_code=500,
+            detail="El cliente de OpenAI no está configurado correctamente."
+        )
+        data = await request.json()
+        user_messages = data.get("messages", [])
+        emotion = data.get("emotion", None)
+
+        # Construir mensajes
+        messages = [
+            {"role": "system", "content": get_system_prompt(get_emotion_context(emotion))},
+            *user_messages
+        ]
+
+        # Ajustar historial
+        messages = trim_messages(
+            messages,
+            config["context_tokens"],
+            token_encoder
+        )
+
+        # Llamada a OpenAI
+        response = client.chat.completions.create(
+            model=config["model_name"],
+            messages=messages,
+            temperature=0.7,
+            max_tokens=config["response_tokens"],
+            top_p=0.9,
+            frequency_penalty=0.5,
+            presence_penalty=0.5
+        )
+
+        return JSONResponse({
+            "response": response.choices[0].message.content,
+            "tokens_used": response.usage.total_tokens
+        })
+
+    except Exception as e:
+        print(f"Error en chat-api: {str(e)}")  # Log del error
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al procesar tu solicitud: {str(e)}"
+        )
     
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_interactivo():
@@ -2223,7 +2521,6 @@ async def guardar_datos_contacto(
         conn.close()
 
     return {"status": "success", "message": "Datos guardados correctamente"}
-
 @app.get("/preguntas_premium", response_class=HTMLResponse)
 def mostrar_preguntas(usuario_id: int, pagina: int = Query(1, alias="pagina")):
     # Definición de categorías y preguntas asociadas
@@ -3705,7 +4002,8 @@ def generar_graficos_por_categoria(valores_respuestas):
     plt.savefig("statics/radar_general.png", dpi=300, bbox_inches="tight")
     plt.close()
 
-def generar_graficos_interactivos(valores_respuestas):
+def generar_graficos_interactivos(valores_respuestas,usuario_id):
+   
     categorias = ["Ambiental", "Vital", "Emocional", "Mental", "Existencial", "Financiera"]
     dimensiones = {
         "Vital": ["Alimentación", "Descanso", "Ejercicio", "Hábitos Saludables", "Salud Vital Corporal"],
@@ -3761,6 +4059,18 @@ def generar_graficos_interactivos(valores_respuestas):
         }
     }
     
+    # Blue color palette
+    primary_color = '#1f77b4'
+    secondary_color = '#4a90e2'
+    fill_color = 'rgba(74, 144, 226, 0.3)'
+    grid_color = 'rgba(200, 200, 200, 0.5)'
+    text_color = '#333333'
+    bg_color = 'rgba(245, 248, 250, 0.8)'
+    
+    static_path = "statics"
+    user_static_path = os.path.join(static_path, f'user_{usuario_id}')
+    os.makedirs(user_static_path, exist_ok=True)
+
     # Generate individual radar charts for each category
     individual_charts = []
     inicio = 0
@@ -3780,19 +4090,30 @@ def generar_graficos_interactivos(valores_respuestas):
             for i, d in enumerate(dim)
         ]
         
-        # Create radar chart
+        # Create radar chart with modern blue theme and smaller size
         fig = go.Figure()
         
+        # Add trace for the data
         fig.add_trace(go.Scatterpolar(
-            r=valores,
-            theta=dim,
+            r=np.append(valores, valores[0]),
+            theta=np.append(dim, dim[0]),
             fill='toself',
             name=categoria,
-            line=dict(color='#2E8B57'),
-            fillcolor='rgba(144, 238, 144, 0.5)',
-            customdata=respuestas_categoria,
+            line=dict(color=primary_color, width=2),
+            fillcolor=fill_color,
+            customdata=np.append(respuestas_categoria, respuestas_categoria[0]),
             hovertemplate="<b>%{theta}</b><br>%{text}<br>Valor original: %{customdata}<extra></extra>",
-            text=tooltips
+            text=np.append(tooltips, tooltips[0])
+        ))
+        
+        # Add a circle at 50% for reference
+        fig.add_trace(go.Scatterpolar(
+            r=[0.5]*len(dim),
+            theta=dim,
+            mode='lines',
+            line=dict(color='gray', width=1, dash='dot'),
+            showlegend=False,
+            hoverinfo='none'
         ))
         
         fig.update_layout(
@@ -3801,30 +4122,49 @@ def generar_graficos_interactivos(valores_respuestas):
                     visible=True,
                     range=[0, 1],
                     tickvals=[0, 0.2, 0.4, 0.6, 0.8, 1],
-                    ticktext=["0%", "20%", "40%", "60%", "80%", "100%"]
+                    ticktext=["0%", "20%", "40%", "60%", "80%", "100%"],
+                    gridcolor=grid_color,
+                    linewidth=1.5,
+                    tickfont=dict(size=9)
                 ),
                 angularaxis=dict(
                     direction="clockwise",
-                    rotation=90
-                )
+                    rotation=90,
+                    linecolor='gray',
+                    gridcolor=grid_color,
+                    tickfont=dict(size=10)
+                ),
+                bgcolor=bg_color
             ),
-            title=f'<b>Perfil en {categoria}</b><br><span style="font-size:14px;color:gray">Promedio: {promedio*100:.1f}%</span>',
+            title=dict(
+                text=f'<b>{categoria}</b><br><span style="font-size:12px;color:gray">Promedio: {promedio*100:.1f}%</span>',
+                x=0.5,
+                xanchor='center',
+                font=dict(size=16, color=text_color)
+            ),
             showlegend=False,
-            height=600,
+            height=400,  # Reduced from 600
+            width=500,   # Reduced from 700
+            margin=dict(t=80, b=40, l=40, r=40),  # Reduced margins
             template='plotly_white',
             font=dict(
                 family="Arial, sans-serif",
-                size=12,
-                color="RebeccaPurple"
-            )
+                size=11,  # Slightly smaller font
+                color=text_color
+            ),
+            paper_bgcolor='white',
+            plot_bgcolor='rgba(0,0,0,0)'
         )
         
         # Save as HTML
-        filename = f"radar_{categoria.lower()}.html"
-        fig.write_html(filename)
-        individual_charts.append(filename)
+        chart_filename = f"radar_{categoria.lower()}.html"
+        chart_filepath = os.path.join(user_static_path, chart_filename)
+        fig.write_html(chart_filepath, full_html=False, include_plotlyjs='cdn')
+        
+        # Guardar la ruta para usar en el dashboard
+        individual_charts.append(f'statics/user_{usuario_id}/{chart_filename}')
     
-    # Generate consolidated radar chart
+    # Generate consolidated radar chart with smaller size
     promedios_categorias = []
     inicio = 0
     
@@ -3839,14 +4179,28 @@ def generar_graficos_interactivos(valores_respuestas):
     # Create consolidated radar chart
     fig_consolidado = go.Figure()
     
+    # Add main trace
     fig_consolidado.add_trace(go.Scatterpolar(
-        r=promedios_categorias,
-        theta=categorias,
+        r=np.append(promedios_categorias, promedios_categorias[0]),
+        theta=np.append(categorias, categorias[0]),
         fill='toself',
         name='Perfil General',
-        line=dict(color='#2E8B57'),
-        fillcolor='rgba(144, 238, 144, 0.5)'
+        line=dict(color=primary_color, width=2.5),
+        fillcolor=fill_color,
+        hoverinfo='r+theta',
+        hovertemplate='<b>%{theta}</b><br>Puntuación: %{r:.0%}<extra></extra>'
     ))
+    
+    # Add reference circles
+    for level in [0.2, 0.4, 0.6, 0.8]:
+        fig_consolidado.add_trace(go.Scatterpolar(
+            r=[level]*7,
+            theta=categorias + [categorias[0]],
+            mode='lines',
+            line=dict(color='gray', width=0.5, dash='dot'),
+            showlegend=False,
+            hoverinfo='none'
+        ))
     
     fig_consolidado.update_layout(
         polar=dict(
@@ -3854,338 +4208,904 @@ def generar_graficos_interactivos(valores_respuestas):
                 visible=True,
                 range=[0, 1],
                 tickvals=[0, 0.2, 0.4, 0.6, 0.8, 1],
-                ticktext=["0%", "20%", "40%", "60%", "80%", "100%"]
+                ticktext=["0%", "20%", "40%", "60%", "80%", "100%"],
+                gridcolor=grid_color,
+                linewidth=1.5,
+                tickfont=dict(size=10)  # Smaller font
             ),
             angularaxis=dict(
                 direction="clockwise",
-                rotation=90
-            )
+                rotation=90,
+                linecolor='gray',
+                gridcolor=grid_color,
+                tickfont=dict(size=11)  # Smaller font
+            ),
+            bgcolor=bg_color
         ),
-        title='<b>Perfil General de Bienestar</b>',
+        title=dict(
+            text='<b>Perfil General</b>',
+            x=0.5,
+            y=0.95,
+            xanchor='center',
+            font=dict(size=18, color=text_color)  # Smaller title
+        ),
         showlegend=False,
-        height=700,
+        height=500,  # Reduced from 700
+        width=600,   # Reduced from 800
+        margin=dict(t=100, b=150, l=60, r=60),  # Reduced margins
         template='plotly_white',
-        font=dict(
-            family="Arial, sans-serif",
-            size=12,
-            color="RebeccaPurple"
-        )
+        font=dict(family="Arial", size=11, color=text_color),  # Smaller font
+        paper_bgcolor='white'
     )
-    
-    # Add table with percentages
-    tabla_df = pd.DataFrame({
-        "Categoría": categorias,
-        "Porcentaje": [f"{v*100:.1f}%" for v in promedios_categorias]
-    })
-    
-    fig_consolidado.add_annotation(
-        x=0.5,
-        y=-0.3,
-        xref="paper",
-        yref="paper",
-        text=tabla_df.to_html(index=False),
-        showarrow=False,
-        align="center",
-        bordercolor="#333333",
-        borderwidth=1,
-        borderpad=4,
-        bgcolor="#ffffff"
-    )
-    
+     
     # Save consolidated chart
     consolidated_filename = "radar_general.html"
-    fig_consolidado.write_html(consolidated_filename)
+    consolidated_filepath = os.path.join(user_static_path, consolidated_filename)
+    fig_consolidado.write_html(consolidated_filepath, full_html=False, include_plotlyjs='cdn')
     
-    # Generate a dashboard HTML that combines all charts
-    # Asumo que tienes una función generate_dashboard definida en otro lugar
-    generate_dashboard(individual_charts, consolidated_filename)
-    return individual_charts + [consolidated_filename]
+    consolidated_chart_path = f'statics/user_{usuario_id}/{consolidated_filename}'
 
+    
+    # Generar dashboard pasando las rutas correctas
+    dashboard_path = generate_dashboard(individual_charts, consolidated_chart_path, usuario_id)
+     
+    return individual_charts + [consolidated_chart_path, dashboard_path]
+def obtener_imagen_categoria(categoria):
+    """Devuelve URL de imagen representativa para cada categoría"""
+    imagenes = {
+        "Ambiental": "https://images.unsplash.com/photo-1541332693222-7a3ac02abb0c",
+        "Vital": "https://images.unsplash.com/photo-1617465811498-69b30dbfd82e",
+        "Emocional": "https://images.unsplash.com/photo-1615361012778-56ee35ec8bc5",
+        "Mental": "https://images.unsplash.com/photo-1633174504412-830d4d745638",
+        "Existencial": "https://images.unsplash.com/photo-1700418980234-afc1c5597ff1",
+        "Financiera": "https://images.unsplash.com/photo-1683307367585-004c8522df2f"
+    }
+    return imagenes.get(categoria, "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40")
 
-def generate_dashboard(individual_charts, consolidated_chart):
-    # Datos de interpretación para los tooltips (puedes personalizarlos)
-    interpretaciones = {
-        "Ambiental": "Cómo interactúas con tu entorno físico y espacios vitales",
-        "Vital": "Estado de tu salud física y hábitos de vida",
-        "Emocional": "Gestión de tus emociones y bienestar psicológico",
-        "Mental": "Estado cognitivo y manejo de pensamientos",
-        "Existencial": "Sentido de propósito y autoconocimiento profundo",
-        "Financiera": "Relación con el dinero y seguridad económica"
+def generate_dashboard(individual_charts, consolidated_chart,usuario_id):
+    import os
+    import webbrowser
+    import json
+    from openai import OpenAI 
+    import re
+
+    # Configuración de OpenAI (reemplaza con tu API key)
+    load_dotenv()
+ 
+# Configuración inicial
+    def configure_openai():
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY no está en .env")
+        return {
+            "api_key": api_key,
+            "model_name": "gpt-3.5-turbo",
+            "context_tokens": 4096,
+            "response_tokens": 500
+        }
+
+    # Inicialización del cliente
+    try:
+        config = configure_openai()
+        client = OpenAI(api_key=config["api_key"])
+        print("✅ OpenAI listo para dashboard")
+    except Exception as e:
+        print(f"❌ Error configurando OpenAI para dashboard: {str(e)}")
+        client = None
+      
+
+    def get_chatgpt_interpretation(category, score, dimensions, dimension_scores):
+        """Obtiene interpretación de ChatGPT para una categoría usando la API v1.0.0+"""
+        try:
+            prompt = f"""Como experto en bienestar, analiza estos resultados:
+
+            Categoría: {category}
+            Puntuación: {score}/10
+            Dimensiones: {', '.join(f'{d}:{s}' for d,s in zip(dimensions, dimension_scores))}
+
+            Proporciona:
+            1. Interpretación breve (1 frases) y en la respuesta no aparezca Interpretación breve
+            2. 1 Fortaleza y áreas a mejorar
+            Usa un tono profesional y constructivo en español."""
+
+            response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Eres un coach de bienestar experto."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=350
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            print(f"Error al obtener interpretación de ChatGPT: {e}")
+            return None
+
+    # Leer los datos de los gráficos generados
+    categorias = ["Ambiental", "Vital", "Emocional", "Mental", "Existencial", "Financiera"]
+    
+    # Dimensiones para cada categoría
+    dimensiones = {
+        "Ambiental": ["Autocuidado", "Armonía ambiental", "Accesibilidad Ambiental", "Atención preventiva", "Conciencia ambiental"],
+        "Vital": ["Alimentación", "Descanso", "Ejercicio", "Hábitos Saludables", "Salud Vital Corporal"],
+        "Emocional": ["Autoconocimiento", "Autoregulación", "Cuidado Personal", "Motivación", "Resiliencia"],
+        "Mental": ["Disfruta De La Realidad", "Manejo Del Stress", "Relaciones Saludables", "Conexión Con Otros", "Seguridad Y Confianza"],
+        "Existencial": ["Autenticidad Conmigo Mismo", "Lo Que Piensas Te Motiva", "Por Qué Estoy Aquí?", "Propósito De Vida", "Quién Soy"],
+        "Financiera": ["Ahorro", "Deuda", "Ingresos", "Inversión", "Presupuesto"]
     }
 
+    # Obtener los valores promedio de cada categoría y las puntuaciones por dimensión
+    promedios = {}
+    dimension_scores = {}
+    
+    for categoria in categorias:
+        chart_file = f"statics/user_{usuario_id}/radar_{categoria.lower()}.html"
+        if chart_file in individual_charts:
+            with open(chart_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+                
+                # Extraer el promedio
+                start = content.find("Promedio: ") + len("Promedio: ")
+                end = content.find("%", start)
+                promedio = float(content[start:end])
+                promedios[categoria] = promedio / 10
+                
+                # Extraer valores de dimensiones usando regex
+                data_match = re.search(r'customdata":\s*\[([^\]]+)\]', content)
+                if data_match:
+                    dim_values_str = data_match.group(1)
+                    dim_values = []
+                    for val in dim_values_str.split(','):
+                        try:
+                            clean_val = val.strip().strip('[').strip(']')
+                            if clean_val:
+                                dim_values.append(float(clean_val))
+                        except ValueError:
+                            continue
+                    
+                    dimension_scores[categoria] = dim_values[:5]
+    # Obtener interpretaciones de ChatGPT para cada categoría
+    logging.info(f"Archivos recibidos en individual_charts: {individual_charts}")
+    ai_interpretations = {}
+    for categoria in categorias:
+        if categoria in promedios and categoria in dimension_scores:
+          interpretation = get_chatgpt_interpretation(
+            categoria,
+            promedios[categoria],
+            dimensiones[categoria],
+            dimension_scores[categoria]
+         )
+          ai_interpretations[categoria] = interpretation or "Interpretación no disponible"
+        else:
+         logging.warning(f"No hay datos completos para la categoría {categoria}")
+         ai_interpretations[categoria] = "Datos no disponibles para esta categoría"
+
+    # Datos de interpretación para los tooltips
+    interpretaciones = {
+        "Ambiental": "Tu relación con la Tierra es un reflejo de tu conexión con la vida. Tus hábitos cotidianos desde el consumo hasta el manejo de recursos muestran cómo honras el ecosistema del que formas parte. Esta evaluación te ayudará a identificar acciones para transformar tu impacto, no solo como un acto ecológico, sino como un compromiso con tu propio bienestar integral",
+        "Vital": "Tu cuerpo es el lienzo donde se refleja tu autocuidado. Los hábitos que has construido desde la nutrición hasta el descanso revelan cómo dialogas con tu energía física. Este análisis no juzga, sino que ilumina oportunidades para alinear tus acciones con las necesidades únicas de tu organismo.Aquí descubrirás cómo fortalecer tu vitalidad para que cada día sea una expresión de tu vitalidad",
+        "Emocional": "Las emociones son ventanas a tu mundo interno. Tus respuestas reflejan cómo entiendes y gestionas la alegría, el estrés o la incertidumbre, y cómo estas experiencias moldean tus relaciones y decisiones. Este espacio de observación te invita a observar patrones, celebrar tus avances y reconocer dónde puedes cultivar mayor equilibrio emocional para vivir con autenticidad y serenidad",
+        "Mental": "Tu mente es un jardín: sus pensamientos y creencias dan forma a tu realidad. Este análisis explora cómo cultivas flexibilidad ante los desafíos, gratitud frente a los logros y claridad en tus decisiones. Descubrirás si tus patrones mentales te acercan a la plenitud o si hay terrenos fértiles para sembrar nuevas perspectivas",
+        "Existencial": "¿Qué huella quieres grabar en el mundo? Tus respuestas revelan cómo conectas tus acciones diarias con un propósito más profundo. En esta introspección explorarás si tu vida actual resuena con tus valores y principios y como conectas con un propósito y sentido de vida superior",
+        "Financiera": "El dinero no solo se cuenta: se gestiona con mente y corazón. Tus elecciones financieras desde el ahorro hasta la inversión hablan de tus valores y tu capacidad para equilibrar lo práctico con lo emocional. Este análisis te guiará a identificar tu coeficiente emocional financiero, así como fortalezas y áreas donde transformar preocupaciones en estrategias claras, construyendo seguridad material y paz interior"
+    }
+
+
+    # Colores y emojis para cada categoría
+    categoria_estilos = {
+        "Ambiental": {
+            "color": "teal", 
+            "emoji": "🌱",
+            "bg_color": "#E6FFFA",
+            "text_color": "#234E52",
+            "border_color": "#4FD1C5"
+        },
+        "Vital": {
+            "color": "green",
+            "emoji": "💪",
+            "bg_color": "#F0FFF4",
+            "text_color": "#22543D",
+            "border_color": "#68D391"
+        },
+        "Emocional": {
+            "color": "purple",
+            "emoji": "😊",
+            "bg_color": "#FAF5FF",
+            "text_color": "#44337A",
+            "border_color": "#B794F4"
+        },
+        "Mental": {
+            "color": "blue",
+            "emoji": "🧠",
+            "bg_color": "#EBF8FF",
+            "text_color": "#2C5282",
+            "border_color": "#63B3ED"
+        },
+        "Existencial": {
+            "color": "indigo",
+            "emoji": "🔍",
+            "bg_color": "#F8FAFF",
+            "text_color": "#3C366B",
+            "border_color": "#7F9CF5"
+        },
+        "Financiera": {
+            "color": "gray",
+            "emoji": "💰",
+            "bg_color": "#F7FAFC",
+            "text_color": "#4A5568",
+            "border_color": "#A0AEC0"
+        }
+    }
+
+    # Calcular el promedio general
+    promedio_general = sum(promedios.values()) / len(promedios) if promedios else 0
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT nombre, apellidos  FROM usuarios WHERE numero_identificacion = %s", (usuario_id,))
+    nombre_completo_global = cursor.fetchone()
+    nombre_completo = f"{nombre_completo_global[0]} {nombre_completo_global[1]}" 
+
+    # Generar el HTML del dashboard
     html_template = f"""
     <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Dashboard de Bienestar Integral</title>
-        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-        <style>
-            body {{
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                margin: 0;
-                padding: 20px;
-                background-color: #f8f9fa;
-            }}
-            .header {{
-                background: linear-gradient(135deg, #2E8B57, #3CB371);
-                color: white;
-                padding: 25px;
-                text-align: center;
-                border-radius: 10px;
-                margin-bottom: 30px;
-                box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-                position: relative;
-                overflow: hidden;
-            }}
-            .header::after {{
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path fill="rgba(255,255,255,0.1)" d="M0,0 L100,0 L100,100 L0,100 Z" /></svg>');
-                opacity: 0.1;
-            }}
-            .chart-container {{
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 25px;
-            }}
-            .chart-box {{
-                background-color: white;
-                border-radius: 10px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-                padding: 20px;
-                width: calc(50% - 40px);
-                min-width: 500px;
-                transition: all 0.3s ease;
-                position: relative;
-                overflow: hidden;
-            }}
-            .chart-box:hover {{
-                transform: translateY(-5px);
-                box-shadow: 0 8px 16px rgba(0,0,0,0.12);
-            }}
-            .chart-title {{
-                text-align: center;
-                margin-bottom: 15px;
-                color: #2F4F4F;
-                font-size: 1.3em;
-                position: relative;
-                display: inline-block;
-            }}
-            .chart-title::after {{
-                content: '';
-                position: absolute;
-                bottom: -5px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 50px;
-                height: 3px;
-                background: #3CB371;
-                transition: width 0.3s;
-            }}
-            .chart-title:hover::after {{
-                width: 100%;
-            }}
-            .consolidated {{
-                width: 85%;
-                margin: 30px auto;
-            }}
-            iframe {{
-                width: 100%;
-                height: 600px;
-                border: none;
-                border-radius: 8px;
-                transition: all 0.3s;
-            }}
-            iframe:hover {{
-                box-shadow: 0 0 0 2px rgba(46, 139, 87, 0.3);
-            }}
-            .tabs {{
-                display: flex;
-                justify-content: center;
-                margin-bottom: 25px;
-                flex-wrap: wrap;
-            }}
-            .tab {{
-                padding: 12px 25px;
-                background-color: #e9ecef;
-                cursor: pointer;
-                border-radius: 30px;
-                margin: 0 8px 10px;
-                transition: all 0.3s;
-                font-weight: 500;
-                position: relative;
-            }}
-            .tab:hover {{
-                background-color: #d1e7dd;
-                color: #0a3622;
-            }}
-            .tab.active {{
-                background: linear-gradient(135deg, #2E8B57, #3CB371);
-                color: white;
-                box-shadow: 0 4px 8px rgba(46, 139, 87, 0.3);
-            }}
-            .tab-content {{
-                display: none;
-                animation: fadeIn 0.5s;
-            }}
-            @keyframes fadeIn {{
-                from {{ opacity: 0; }}
-                to {{ opacity: 1; }}
-            }}
-            .tab-content.active {{
-                display: block;
-            }}
-            /* Tooltip styles */
-            .tooltip {{
-                position: relative;
-                display: inline-block;
-            }}
-            .tooltip .tooltiptext {{
-                 visibility: hidden;
-                width: 180px;
-                background-color: #333;
-                color: #fff;
-                text-align: center;
-                border-radius: 6px;
-                padding: 8px;
-                position: absolute;
-                z-index: 1;
-                bottom: 125%;
-                left: 50%;
-                transform: translateX(-50%);
-                opacity: 0;
-                transition: opacity 0.3s;
-                font-size: 0.8em;  /* Tamaño más pequeño */
-                font-weight: normal;
-            }}
-            .tooltip .tooltiptext::after {{
-                content: "";
-                position: absolute;
-                top: 100%;
-                left: 50%;
-                margin-left: -5px;
-                border-width: 5px;
-                border-style: solid;
-                border-color: #333 transparent transparent transparent;
-            }}
-            .tooltip:hover .tooltiptext {{
-                visibility: visible;
-                opacity: 1;
-            }}
-            /* Info icon */
-            .info-icon {{
-                margin-left: 6px;
-                color: #6c757d;
-                cursor: help;
-                font-size: 0.65em; /* Más pequeño */
-                vertical-align: middle; /* Alinea con el texto */
-                transition: color 0.3s;
-            }}
-            .info-icon:hover {{
-                color: #2E8B57;
-            }}
-            /* Responsive design */
-            @media (max-width: 768px) {{
-                .chart-box {{
-                    width: 100%;
-                    min-width: auto;
-                }}
-                .consolidated {{
-                    width: 95%;
-                }}
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1><i class="fas fa-chart-pie"></i> Dashboard de Bienestar Integral</h1>
-            <p>Visualización de tu perfil de bienestar</p>
-        </div>
-        
-        <div class="tabs">
-            <div class="tab active" onclick="showTab('general')">
-                <i class="fas fa-globe"></i> Vista General
-            </div>
-            <div class="tab" onclick="showTab('individual')">
-                <i class="fas fa-layer-group"></i> Vista por Categoría
-            </div>
-        </div>
-        
-        <div id="general" class="tab-content active">
-            <div class="chart-box consolidated">
-                <h2 class="chart-title">
-                    Perfil General
-                    <span class="tooltip">
-                        <i class="fas fa-info-circle info-icon"></i>
-                        <span class="tooltiptext">Esta vista muestra un resumen consolidado de todas tus áreas de bienestar</span>
-                    </span>
-                </h2>
-                <iframe src="{consolidated_chart}"></iframe>
-            </div>
-        </div>
-        
-        <div id="individual" class="tab-content">
-            <div class="chart-container">
-                {"".join([f'''
-                <div class="chart-box">
-                    <h3 class="chart-title">
-                        {chart.replace("radar_", "").replace(".html", "").title()}
-                        <span class="tooltip">
-                            <i class="fas fa-info-circle info-icon"></i>
-                            <span class="tooltiptext">{interpretaciones.get(chart.replace("radar_", "").replace(".html", "").title(), "Información detallada sobre esta categoría")}</span>
-                        </span>
-                    </h3>
-                    <iframe src="{chart}"></iframe>
-                </div>
-                ''' for chart in individual_charts])}
-            </div>
-        </div>
-        
-        <script>
-            function showTab(tabId) {{
-                // Hide all tab contents
-                document.querySelectorAll('.tab-content').forEach(content => {{
-                    content.classList.remove('active');
-                }});
-                
-                // Show selected tab content
-                document.getElementById(tabId).classList.add('active');
-                
-                // Update tab styles
-                document.querySelectorAll('.tab').forEach(tab => {{
-                    tab.classList.remove('active');
-                }});
-                
-                event.currentTarget.classList.add('active');
-            }}
-
-            // Efecto adicional al pasar el mouse sobre los gráficos
-            document.querySelectorAll('.chart-box').forEach(box => {{
-                box.addEventListener('mouseenter', function() {{
-                    this.querySelector('iframe').style.transform = 'scale(1.01)';
-                }});
-                box.addEventListener('mouseleave', function() {{
-                    this.querySelector('iframe').style.transform = 'scale(1)';
-                }});
-            }});
-        </script>
-    </body>
-    </html>
-    """
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Análisis de Percepción del Bienestar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+       :root {{
+      --color-primary: #6366F1;
+      --color-success: #10B981;
+      --color-warning: #F59E0B;
+      --color-danger: #EF4444;
+      --color-info: #3B82F6;
+      --color-purple: #8B5CF6;
+      --color-gray-100: #F3F4F6;
+      --color-gray-200: #E5E7EB;
+      --color-gray-300: #D1D5DB;
+      --color-gray-700: #374151;
+      --color-gray-900: #111827;
+      
+      /* Nueva paleta emocional */
+      --color-teal: #4FD1C5;
+      --color-green: #68D391;
+      --color-purple: #B794F4;
+      --color-blue: #63B3ED;
+      --color-indigo: #7F9CF5;
+      --color-gray: #A0AEC0;
+      
+      --color-teal-light: #E6FFFA;
+      --color-green-light: #F0FFF4;
+      --color-purple-light: #FAF5FF;
+      --color-blue-light: #EBF8FF;
+      --color-indigo-light: #F8FAFF;
+      --color-gray-light: #F7FAFC;
+      
+      --color-teal-dark: #234E52;
+      --color-green-dark: #22543D;
+      --color-purple-dark: #44337A;
+      --color-blue-dark: #2C5282;
+      --color-indigo-dark: #3C366B;
+      --color-gray-dark: #4A5568;
+    }}
     
-    with open("dashboard_bienestar.html", "w", encoding="utf-8") as f:
-        f.write(html_template)
+    body {{
+      font-family: 'Inter', sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 2rem;
+      color: var(--color-gray-900);
+      line-height: 1.6;
+    }}
 
-    file_path = os.path.abspath("dashboard_bienestar.html")
-    webbrowser.open_new_tab(f"file://{file_path}")
+    .container {{
+      max-width: 1200px;
+      margin: 0 auto;
+    }}
+
+    h1 {{
+      font-family: 'Playfair Display', serif;
+      font-size: 2.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--color-gray-900);
+      line-height: 1.2;
+    }}
+
+    h2 {{
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--color-gray-700);
+    }}
+
+    .header {{
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 2rem;
+    }}
+
+    .dashboard-grid {{
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 2rem;
+      align-items: start;
+    }}
+
+    @media (max-width: 768px) {{
+      .dashboard-grid {{
+        grid-template-columns: 1fr;
+      }}
+    }}
+
+    .summary-card {{
+      height: auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }}
+
+    .summary-image {{
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }}
+
+    .metrics-container {{
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }}
+
+    .metric-card {{
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 220px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      position: relative;
+      overflow: hidden;
+    }}
+
+    .metric-card:hover {{
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+    }}
+
+    /* Estilos específicos por categoría */
+    .metric-card.teal {{
+      background: var(--color-teal-light);
+      border-color: var(--color-teal);
+      color: var(--color-teal-dark);
+    }}
+    
+    .metric-card.green {{
+      background: var(--color-green-light);
+      border-color: var(--color-green);
+      color: var(--color-green-dark);
+    }}
+    
+    .metric-card.purple {{
+      background: var(--color-purple-light);
+      border-color: var(--color-purple);
+      color: var(--color-purple-dark);
+    }}
+    
+    .metric-card.blue {{
+      background: var(--color-blue-light);
+      border-color: var(--color-blue);
+      color: var(--color-blue-dark);
+    }}
+    
+    .metric-card.indigo {{
+      background: var(--color-indigo-light);
+      border-color: var(--color-indigo);
+      color: var(--color-indigo-dark);
+    }}
+    
+    .metric-card.gray {{
+      background: var(--color-gray-light);
+      border-color: var(--color-gray);
+      color: var(--color-gray-dark);
+    }}
+
+    .metric-header {{
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 0.5rem;
+      text-align: center;
+      width: 100%;
+    }}
+
+    .metric-title {{
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }}
+
+    .metric-value {{
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin: 0.75rem 0;
+      text-align: center;
+      font-feature-settings: 'tnum';
+      font-variant-numeric: tabular-nums;
+    }}
+    
+    .category-image {{
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-top: auto;
+      border: 1px solid rgba(0,0,0,0.1);
+    }}
+
+    .metric-footer {{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+      width: 100%;
+    }}
+    
+    .metrics-container {{
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }}
+    
+    .progress-container {{
+      margin-top: 1.5rem;
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }}
+
+    .progress-bar {{
+      height: 8px;
+      background: var(--color-gray-200);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }}
+
+    .progress-fill {{
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-teal), var(--color-indigo));
+      border-radius: 4px;
+    }}
+
+    .level-indicator {{
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: var(--color-gray-700);
+      margin-top: 0.75rem;
+    }}
+
+    .level-indicator span.active {{
+      color: var(--color-indigo);
+      font-weight: 600;
+    }}
+
+    .description {{
+      font-size: 1rem;
+      color: var(--color-gray-700);
+      margin-top: 1.5rem;
+      line-height: 1.6;
+    }}
+    
+    .highlight {{
+      font-weight: 600;
+      color: var(--color-indigo-dark);
+    }}
+
+    .emoji {{
+      font-size: 1.5rem;
+      margin-right: 0.5rem;
+    }}
+
+    /* Estilos para los iframes de gráficos */
+    .chart-container.consolidated {{
+      width: 100%;
+      height: 550px;
+      min-height: 500px;
+      border: none;
+      margin-bottom: 1.5rem;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }}
+    
+    .chart-container iframe {{
+      width: 100%;
+      height: 100%;
+      border: none;
+    }}
+    
+    /* Modal Styles */
+    .modal {{
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }}
+
+    .modal-content {{
+      background: white;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 700px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 2.5rem;
+      box-shadow: 0 20px 25px rgba(0,0,0,0.2);
+      position: relative;
+    }}
+
+    .close-modal {{
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      font-size: 1.75rem;
+      cursor: pointer;
+      color: var(--color-gray-700);
+      background: var(--color-gray-100);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }}
+
+    .modal-header {{
+      text-align: center;
+      margin-bottom: 2rem;
+    }}
+
+    .modal-header h2 {{
+      font-size: 1.75rem;
+      color: var(--color-gray-900);
+      margin-bottom: 0.75rem;
+      font-family: 'Playfair Display', serif;
+    }}
+
+    .modal-header .evaluation {{
+      font-size: 3rem;
+      font-weight: 700;
+      margin: 1.5rem 0;
+      color: var(--color-indigo-dark);
+    }}
+
+    .modal-section {{
+      margin-bottom: 2rem;
+    }}
+
+    .modal-section h3 {{
+      font-size: 1.25rem;
+      color: var(--color-gray-900);
+      margin-bottom: 1rem;
+      border-bottom: 2px solid var(--color-gray-200);
+      padding-bottom: 0.75rem;
+      font-weight: 600;
+    }}
+
+    .modal-section p {{
+      font-size: 1rem;
+      color: var(--color-gray-700);
+      line-height: 1.8;
+      text-align: justify;
+    }}
+
+    .metric-details {{
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }}
+
+    .metric-detail {{
+      background: var(--color-gray-100);
+      padding: 1rem;
+      border-radius: 8px;
+      border-left: 4px solid var(--color-indigo);
+    }}
+
+    .metric-detail .label {{
+      font-size: 0.9rem;
+      color: var(--color-gray-700);
+      font-weight: 500;
+    }}
+
+    .metric-detail .value {{
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-top: 0.5rem;
+      color: var(--color-indigo-dark);
+    }}
+
+    .attention-section {{
+      background: var(--color-gray-100);
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-top: 2rem;
+      border-left: 4px solid var(--color-danger);
+    }}
+
+    .attention-section h3 {{
+      color: var(--color-danger);
+      margin-bottom: 1rem;
+    }}
+    
+    .intro-text {{
+      font-size: 1.05rem;
+      text-align: justify;
+      margin-bottom: 1.5rem;
+      color: var(--color-gray-700);
+      line-height: 1.8;
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }}
+    .top-section {{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }}
+    
+    @media (max-width: 768px) {{
+      .top-section {{
+        grid-template-columns: 1fr;
+      }}
+    }}
+    
+    .consolidated-chart {{
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      height: 100%;
+    }}
+    
+    .summary-container {{
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+    }}
+    
+    .metrics-section {{
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Análisis de Bienestar Personal</h1>
+          <h2>{f"Resumen para {nombre_completo}" if nombre_completo else "Resumen de tus métricas clave"}</h2>
+      </div>
+    </div>
+    <div class="dashboard-grid">
+      <div class="summary-card">
+        <div class="chart-container consolidated">
+          <iframe src="/{consolidated_chart}" width="100%" height="100%"></iframe>
+        </div>
+        <h2>Resumen General</h2>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ promedio_general * 10 }}%"></div>
+          </div>
+          <div class="level-indicator">
+            <span class="{{ 'active' if promedio_general < 4.0 else '' }}">Bajo</span>
+            <span class="{{ 'active' if 4.0 <= promedio_general < 7.0 else '' }}">Medio</span>
+            <span class="{{ 'active' if promedio_general >= 7.0 else '' }}">Alto</span>
+          </div>
+        </div>
+        <div class="description">
+          Tu bienestar general se encuentra en un nivel {'bajo' if promedio_general < 4.0 else 'medio' if promedio_general < 7.0 else 'alto'}. 
+          Revisa las métricas detalladas para identificar áreas de mejora.
+        </div>
+      </div>
+      <div>
+        <div class="summary-card">
+          <h2>Métricas por Dimensión</h2>
+           <p style="text-align: justify; margin-bottom: 1rem; color: var(--color-gray-700); font-size: 0.9rem;">
+            Este informe ofrece una visión personal de tu bienestar integral, destacando tus fortalezas y áreas de mejora. 
+            Sirve como una herramienta de autoconocimiento que invita a la reflexión y acción, resaltando tu nivel de energía 
+            y disposición para enfrentar desafíos. Reconoce que el bienestar es un proceso dinámico, en el que celebrar tus 
+            logros y trabajar en tu desarrollo te acerca a una vida más plena y auténtica.
+        </p>
+            <div class="metrics-container">
+            {''.join([
+                f'''
+                <div class="metric-card {categoria_estilos[categoria]['color']}" onclick="showModal('{categoria}')">
+                    <span class="metric-title">{categoria}</span>
+                    <span class="metric-value">{promedios.get(categoria, 0):.1f}</span>
+                    <img src="{obtener_imagen_categoria(categoria)}" alt="{categoria}" class="category-image">
+                </div>
+                '''
+                for categoria in categorias
+            ])}
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="detailModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeModal()">&times;</span>
+      <div class="modal-header">
+        <h2 id="modalTitle">DETALLES</h2>
+            <div class="evaluation" id="modalEvaluation">0.0</div>
+            <p id="modalDescription" style="text-align: justify;">Descripción de la categoría seleccionada.</p>
+            </div>
+
+     <div class="modal-section">
+        <h3>INTERPRETACIÓN</h3>
+        <div id="modalInterpretation" style="white-space: pre-line; text-align: justify;">Interpretación generada automáticamente...</div>
+        </div>
+
+      <div class="modal-section">
+        <h3>GRÁFICO</h3>
+        <div class="chart-container" style="height: 400px;">
+          <iframe id="modalChart" src="" width="100%" height="100%"></iframe>
+        </div>
+      </div>
+
+      <div class="attention-section modal-section" id="modalAttention">
+        <h3>RECOMENDACIONES</h3>
+        <p id="modalRecommendations">Recomendaciones específicas para mejorar en esta área.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Datos de interpretaciones de IA
+    const aiInterpretations = {json.dumps(ai_interpretations)};
+    
+    function showModal(category) {{
+      // Actualizar el contenido del modal según la categoría seleccionada
+      document.getElementById('modalChart').src = "/statics/user_{usuario_id}/radar_" + category.toLowerCase() + ".html";
+      document.getElementById('modalTitle').textContent = category.toUpperCase();
+      document.getElementById('modalEvaluation').textContent = {json.dumps(promedios)}[category].toFixed(1);
+      document.getElementById('modalDescription').textContent = {json.dumps(interpretaciones)}[category];
+      
+      // Mostrar interpretación de IA si está disponible
+      const interpretation = aiInterpretations[category] || "Interpretación no disponible en este momento.";
+      document.getElementById('modalInterpretation').textContent = interpretation;
+      
+      
+      // Recomendaciones basadas en el puntaje
+      const score = {json.dumps(promedios)}[category];
+      let recommendations = "";
+      
+      if(score < 4) {{
+        recommendations = "Esta área necesita atención inmediata. Considera implementar cambios significativos y buscar apoyo profesional si es necesario.";
+        document.getElementById('modalAttention').style.display = 'block';
+      }} else if(score < 7) {{
+        recommendations = "Hay espacio para mejorar en esta área. Pequeños ajustes en tus hábitos podrían marcar una gran diferencia.";
+        document.getElementById('modalAttention').style.display = 'block';
+      }} else {{
+        recommendations = "¡Buen trabajo en esta área! Sigue manteniendo estos buenos hábitos y considera compartir tus estrategias con otros.";
+        document.getElementById('modalAttention').style.display = 'none';
+      }}
+      
+      document.getElementById('modalRecommendations').textContent = recommendations;
+
+      // Mostrar el modal
+      document.getElementById('detailModal').style.display = 'flex';
+    }}
+
+    function closeModal() {{
+      document.getElementById('detailModal').style.display = 'none';
+    }}
+
+    // Cerrar modal al hacer clic fuera del contenido
+    window.onclick = function(event) {{
+      const modal = document.getElementById('detailModal');
+      if (event.target === modal) {{
+        closeModal();
+      }}
+    }}
+  </script>
+</body>
+</html>
+    """
+    dashboard_filename = "dashboard_bienestar.html"
+    dashboard_path = os.path.join("statics", f"user_{usuario_id}", dashboard_filename)
+    with open(dashboard_path, "w", encoding="utf-8") as f:
+      f.write(html_template)
+
+    return f"statics/user_{usuario_id}/{dashboard_filename}"
+
+@app.get("/dashboard-content/{usuario_id}", response_class=HTMLResponse)
+async def get_dashboard_content(usuario_id: str):
+    dashboard_path = f"statics/user_{usuario_id}/dashboard_bienestar.html"
+    
+    if not os.path.exists(dashboard_path):
+        raise HTTPException(status_code=404, detail="Dashboard no encontrado")
+    
+    with open(dashboard_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    return HTMLResponse(content=content)
+
+@app.post("/generar-informe/{usuario_id}")
+async def generar_informe(usuario_id: str, respuestas: List[int]):
+    # Generar gráficos y dashboard
+    rutas_archivos = generar_graficos_interactivos(respuestas, usuario_id)
+    
+    # La última ruta es el dashboard
+    dashboard_path = rutas_archivos[-1]
+    
+    # Retornar URL para acceder al dashboard
+    return {
+        "dashboard_url": f"/dashboard/{usuario_id}",
+        "archivos_generados": rutas_archivos
+    }
+
+@app.get("/dashboard/{usuario_id}")
+async def get_dashboard(usuario_id: str):
+    dashboard_path = f"statics/user_{usuario_id}/dashboard_bienestar.html"
+    
+    if not os.path.exists(dashboard_path):
+        raise HTTPException(status_code=404, detail="Dashboard no encontrado")
+    
+    return FileResponse(dashboard_path)
+
+@app.get("/dashboard-content/{usuario_id}", response_class=HTMLResponse)
+async def get_dashboard_content(usuario_id: str):
+    dashboard_path = f"statics/user_{usuario_id}/dashboard_bienestar.html"
+    
+    if not os.path.exists(dashboard_path):
+        raise HTTPException(status_code=404, detail="Dashboard no encontrado")
+    
+    with open(dashboard_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    return HTMLResponse(content=content)
 
 def generar_graficos_por_categoria_Premium(valores_respuestas):
         matplotlib.use('Agg') 
@@ -4429,6 +5349,45 @@ def agregar_pie_pagina(c, width, page_num):
     c.setFont("Helvetica", 10)
     c.setFillColor(colors.black)
     c.drawCentredString(width - 40, 30, f"Página {page_num}")       
+
+def generar_recomendaciones_gpt(respuestas_usuario, nombre_usuario):
+    # Convertir respuestas a un formato legible para GPT
+    respuestas_texto = "\n".join([f"Pregunta: {pregunta}, Respuesta: {respuesta}" 
+                                for pregunta, respuesta in respuestas_usuario])
+    
+    prompt = f"""
+    Eres un experto en bienestar integral y coaching de vida. A continuación, encontrarás las respuestas de {nombre_usuario} a un cuestionario de autoevaluación en 6 dimensiones: 
+    - Salud física (Alimentación, Descanso, Ejercicio,Hábitos Saludables,Salud Vital Corporal)
+    - Salud emocional (Autoregulación, Cuidado Personal,Motivación,Resiliencia)
+    - Salud mental (Disfruta De La Realidad, Manejo Del Stress,Relaciones Saludables,Conexión Con Otros,Seguridad Y Confianza)
+    - Sentido existencial (Autenticidad Conmigo Mismo, Lo Que Piensas Te Motiva,Por Qué Estoy Aquí,Propósito De Vida,Quién Soy)
+    - Salud financiera (Ahorro, Deuda,Ingresos,Inversión,Presupuesto)
+    - Salud ambiental (Autocuidado, Armonía ambiental,Accesibilidad Ambiental,Atención preventiva,Conciencia ambiental)
+
+    Respuestas del usuario:
+    {respuestas_texto}
+
+    Por favor, genera:
+    1. Un análisis conciso (1 párrafo) destacando las fortalezas principales del usuario.
+    2. 3 áreas de oportunidad específicas basadas en sus respuestas más bajas.
+    3. 5 recomendaciones personalizadas y prácticas para mejorar, usando el formato:
+       - [Dimensión]: [Acción concreta] (Ej: "Salud física: Camina 20 minutos al día")
+    4. Una frase motivacional personalizada.
+
+    Usa un tono empático y profesional. Evita jerga médica.
+    """
+    
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=500
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"Error al llamar a la API: {e}")
+        return None
      
     
 def generar_pdf_con_analisis(usuario_id):
@@ -4510,12 +5469,23 @@ def generar_pdf_con_analisis(usuario_id):
     # Convertir respuestas a valores numéricos
     valores_respuestas = np.array([int(respuesta) for _, respuesta in respuestas])
     generar_graficos_por_categoria(valores_respuestas)
-    # generar_graficos_interactivos(valores_respuestas)
+    #generar_graficos_interactivos(valores_respuestas,usuario_id)
     
     # Análisis básico
     promedio = np.mean(valores_respuestas)
     min_valor = np.min(valores_respuestas)
     max_valor = np.max(valores_respuestas)
+
+    # recomendaciones_gpt = generar_recomendaciones_gpt(respuestas, nombre_completo)
+
+    # if recomendaciones_gpt:
+    #     secciones = recomendaciones_gpt.split("\n\n")  
+    #     fortalezas = secciones[0] if len(secciones) > 0 else ""
+    #     oportunidades = secciones[1] if len(secciones) > 1 else ""
+    #     recomendaciones = "\n".join(secciones[2:-1]) if len(secciones) > 2 else ""
+    #     motivacion = secciones[-1] if len(secciones) > 3 else ""
+    # else:
+    #     fortalezas = oportunidades = recomendaciones = motivacion = "No se pudieron generar recomendaciones personalizadas."
 
     # Determinar tendencias
     if promedio >= 8:
@@ -5665,6 +6635,7 @@ async def guardar_respuestas(request: Request, usuario_id: int = Form(...), pagi
                 ruta_descarga = f"/descargar_pdf_Premium?usuario_id={usuario_id}"
             else:
                 ruta_descarga = f"/descargar_pdf?usuario_id={usuario_id}"
+                
             contenido_html = f"""
             <html>
             <head>
@@ -5674,49 +6645,64 @@ async def guardar_respuestas(request: Request, usuario_id: int = Form(...), pagi
                 <style>
                     body {{
                         font-family: 'Roboto', sans-serif;
-                        text-align: center;
-                        padding: 50px;
-                        background-color: #f4f4f4;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 100vh;
+                        margin: 0;
+                        background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
                     }}
                     .container {{
                         background: white;
-                        padding: 30px;
-                        border-radius: 12px;
-                        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
-                        display: inline-block;
+                        padding: 40px 30px;
+                        border-radius: 16px;
+                        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.15);
                         max-width: 500px;
+                        width: 90%;
+                        text-align: center;
+                        animation: fadeIn 0.8s ease-in-out;
                     }}
                     h1 {{
-                        color: #333;
+                        color: #222;
+                        margin-bottom: 15px;
+                        font-size: 28px;
                     }}
                     p {{
                         font-size: 18px;
-                        color: #666;
+                        color: #555;
+                        margin-bottom: 25px;
                     }}
                     button {{
                         background-color: #007bff;
                         color: white;
                         border: none;
-                        padding: 15px 25px;
-                        font-size: 18px;
-                        border-radius: 8px;
+                        padding: 14px 28px;
+                        font-size: 17px;
+                        border-radius: 10px;
                         cursor: pointer;
-                        margin-top: 20px;
-                        transition: background 0.3s ease-in-out;
+                        margin: 10px 5px;
+                        transition: transform 0.2s, background 0.3s;
                     }}
                     button:hover {{
                         background-color: #0056b3;
+                        transform: translateY(-2px);
+                    }}
+                    button:active {{
+                        transform: scale(0.97);
+                    }}
+                    @keyframes fadeIn {{
+                        from {{ opacity: 0; transform: translateY(-20px); }}
+                        to {{ opacity: 1; transform: translateY(0); }}
                     }}
                 </style>
             </head>
             <body>
-                 <div class="container">
+                <div class="container">
                     <h1>¡Gracias por tu tiempo!</h1>
-                    <p>Haz clic en el botón para generar y descargar tu análisis de respuestas:</p>
-                        <button onclick="window.location.href='{ruta_descarga}'">Generar y Descargar Análisis</button>
+                    <p>Haz clic en el botón para continuar:</p>
+                    <button onclick="window.location.href='{ruta_descarga}'">📥 Generar Reporte Interactivo y Descargar Análisis</button>
+                    <button onclick="window.location.href='/chat'">💬 Ingresar a Chat</button>
                 </div>
-                </div>
-               
             </body>
             </html>
             """
@@ -5773,7 +6759,7 @@ async def guardar_respuestas_Premium(request: Request, usuario_id: int = Form(..
             else:
                 ruta_descarga = f"/descargar_pdf?usuario_id={usuario_id}"
             contenido_html = f"""
-            <html>
+             <html>
             <head>
                 <title>¡Buen trabajo!</title>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -5781,49 +6767,64 @@ async def guardar_respuestas_Premium(request: Request, usuario_id: int = Form(..
                 <style>
                     body {{
                         font-family: 'Roboto', sans-serif;
-                        text-align: center;
-                        padding: 50px;
-                        background-color: #f4f4f4;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 100vh;
+                        margin: 0;
+                        background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
                     }}
                     .container {{
                         background: white;
-                        padding: 30px;
-                        border-radius: 12px;
-                        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
-                        display: inline-block;
+                        padding: 40px 30px;
+                        border-radius: 16px;
+                        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.15);
                         max-width: 500px;
+                        width: 90%;
+                        text-align: center;
+                        animation: fadeIn 0.8s ease-in-out;
                     }}
                     h1 {{
-                        color: #333;
+                        color: #222;
+                        margin-bottom: 15px;
+                        font-size: 28px;
                     }}
                     p {{
                         font-size: 18px;
-                        color: #666;
+                        color: #555;
+                        margin-bottom: 25px;
                     }}
                     button {{
                         background-color: #007bff;
                         color: white;
                         border: none;
-                        padding: 15px 25px;
-                        font-size: 18px;
-                        border-radius: 8px;
+                        padding: 14px 28px;
+                        font-size: 17px;
+                        border-radius: 10px;
                         cursor: pointer;
-                        margin-top: 20px;
-                        transition: background 0.3s ease-in-out;
+                        margin: 10px 5px;
+                        transition: transform 0.2s, background 0.3s;
                     }}
                     button:hover {{
                         background-color: #0056b3;
+                        transform: translateY(-2px);
+                    }}
+                    button:active {{
+                        transform: scale(0.97);
+                    }}
+                    @keyframes fadeIn {{
+                        from {{ opacity: 0; transform: translateY(-20px); }}
+                        to {{ opacity: 1; transform: translateY(0); }}
                     }}
                 </style>
             </head>
             <body>
-                 <div class="container">
+                <div class="container">
                     <h1>¡Gracias por tu tiempo!</h1>
-                    <p>Haz clic en el botón para generar y descargar tu análisis de respuestas:</p>
-                        <button onclick="window.location.href='{ruta_descarga}'">Generar y Descargar Análisis</button>
+                    <p>Haz clic en el botón para continuar:</p>
+                    <button onclick="window.location.href='{ruta_descarga}'">📥 Generar Reporte Interactivo y Descargar Análisis</button>
+                    <button onclick="window.location.href='/chat'">💬 Ingresar a Chat</button>
                 </div>
-                </div>
-               
             </body>
             </html>
             """
@@ -5857,12 +6858,12 @@ async def descargar_pdf_Premium(usuario_id: int):
 
     try:
         await aiosmtplib.send(
-            #  message,
-            #  hostname="smtp.gmail.com",
-            #  port=587,
-            #  start_tls=True,
-            #  username="correopruebavital@gmail.com",
-            #  password="olxh cdfd lsmo skcz"
+            # //   message,
+            # //   hostname="smtp.gmail.com",
+            # //   port=587,
+            # //   start_tls=True,
+            # //   username="correopruebavital@gmail.com",
+            # //   password="cxvi hyne temx xmgt"
         )
     except Exception as e:
         print(f"Error al enviar el correo: {e}")
@@ -5889,13 +6890,13 @@ async def descargar_pdf(usuario_id: int):
 
     try:
         await aiosmtplib.send(
-            #  message,
-            #  hostname="smtp.gmail.com",
-            #  port=587,
-            #  start_tls=True,
-            #  username="correopruebavital@gmail.com",
-            #  password="olxh cdfd lsmo skcz"
-        )
+        #     //   message,
+        #     //   hostname="smtp.gmail.com",
+        #     //   port=587,
+        #     //   start_tls=True,
+        #     //   username="correopruebavital@gmail.com",
+        #     //   password="cxvi hyne temx xmgt"
+         )
     except Exception as e:
         print(f"Error al enviar el correo: {e}")
 
@@ -5923,12 +6924,12 @@ async def enviar_pdf_email(usuario_id: int = Form(...), correo_destino: str = Fo
     # Envía el correo
     try:
         await aiosmtplib.send(
-        #    message,
-        #    hostname="smtp.gmail.com",
-        #     port=587,
-        #    start_tls=True,
-        #     username="correopruebavital@gmail.com",
-        #    password="olxh cdfd lsmo skcz"
+            # // message,
+            # // hostname="smtp.gmail.com",
+            # //  port=587,
+            # // start_tls=True,
+            # //  username="correopruebavital@gmail.com",
+            # // password="cxvi hyne temx xmgt"
         )
         return {"mensaje": f"PDF enviado a {correo_destino} correctamente."}
     except Exception as e:
@@ -5937,4 +6938,10 @@ async def enviar_pdf_email(usuario_id: int = Form(...), correo_destino: str = Fo
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(
+    app,
+    host="127.0.0.1",
+    port=8000,
+    ssl_certfile="localhost+2.pem",  # Windows
+    ssl_keyfile="localhost+2-key.pem"
+)
