@@ -511,18 +511,43 @@ def verificar_usuario(
     
     if usuario:
         user_type = request.cookies.get("user_type", "invitado")
-
+        usuario_id = numero_identificacion
+        
         if user_type in ["Corevital", "AdvanceVital", "premiumVital"]:
-            version_options = """
+            version_options = f"""
             <button onclick="window.location.href='/chat'" class="btn-option">
-                <div>
-                    <strong>💬 Chat Interactivo</strong><br>
-                    <span>¿Listo para iniciar tu proceso de transformación? Hablemos.</span>
+                <div class="btn-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div class="btn-content">
+                    <span class="btn-title">Chat Interactivo</span>
+                    <span class="btn-desc">¿Listo para iniciar tu proceso de transformación? Hablemos.</span>
+                </div>
+                <div class="btn-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </button>
+            
+            <button onclick="window.location.href='/dashboard-content/{usuario.get("id", numero_identificacion)}'" class="btn-option">
+                <div class="btn-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="btn-content">
+                    <span class="btn-title">Visualizar Reporte Interactivo</span>
+                    <span class="btn-desc">Accede a análisis detallados y métricas personalizadas de tu progreso.</span>
+                </div>
+                <div class="btn-arrow">
+                    <i class="fas fa-chevron-right"></i>
                 </div>
             </button>
             """
         else:
-            version_options = "<p style='color:#e53e3e;'>⚠️ No tienes acceso a versiones especiales.</p>"
+            version_options = """
+            <div class="access-denied">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>No tienes acceso a las versiones especiales de VitalApp</span>
+            </div>
+            """
 
         return f"""
         <!DOCTYPE html>
@@ -530,76 +555,248 @@ def verificar_usuario(
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Bienvenido</title>
+            <title>Bienvenido a VitalApp</title>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
             <style>
-                body {{
+                :root {{
+                    --primary: #2f855a;
+                    --primary-light: #48bb78;
+                    --primary-dark: #276749;
+                    --secondary: #7dd3fc;
+                    --accent: #c3ecb2;
+                    --text: #2d3748;
+                    --text-light: #4a5568;
+                    --white: #ffffff;
+                    --gray-light: #f7fafc;
+                    --danger: #e53e3e;
+                    --shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+                    --transition: all 0.3s ease;
+                }}
+                
+                * {{
                     margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }}
+                
+                body {{
                     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    background: linear-gradient(135deg, #c3ecb2 0%, #7dd3fc 100%);
+                    background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
                     display: flex;
                     justify-content: center;
                     align-items: center;
-                    height: 100vh;
+                    min-height: 100vh;
+                    padding: 20px;
                 }}
+                
                 .card {{
-                    background: white;
-                    padding: 2rem;
+                    background: var(--white);
+                    padding: 2.5rem;
                     border-radius: 20px;
-                    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+                    box-shadow: var(--shadow);
                     text-align: center;
-                    max-width: 500px;
+                    max-width: 550px;
                     width: 100%;
                     animation: fadeIn 0.8s ease-in-out;
                 }}
+                
+                .logo {{
+                    width: 80px;
+                    height: 80px;
+                    margin: 0 auto 1rem;
+                    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-size: 2.5rem;
+                }}
+                
                 h2 {{
-                    color: #2f855a;
+                    color: var(--primary);
+                    margin-bottom: 0.8rem;
+                    font-size: 1.8rem;
+                }}
+                
+                .user-info {{
+                    background-color: var(--gray-light);
+                    padding: 1.2rem;
+                    border-radius: 12px;
+                    margin: 1.2rem 0;
+                    text-align: left;
+                }}
+                
+                .info-row {{
+                    display: flex;
                     margin-bottom: 0.5rem;
                 }}
-                p {{
-                    color: #4a5568;
-                    margin: 0.3rem 0;
+                
+                .info-label {{
+                    font-weight: bold;
+                    color: var(--primary-dark);
+                    min-width: 100px;
                 }}
+                
+                .info-value {{
+                    color: var(--text-light);
+                }}
+                
                 h3 {{
-                    margin-top: 1.5rem;
-                    color: #2d3748;
+                    margin: 1.8rem 0 1.2rem;
+                    color: var(--text);
+                    font-size: 1.4rem;
+                    position: relative;
+                    display: inline-block;
                 }}
+                
+                h3:after {{
+                    content: '';
+                    position: absolute;
+                    width: 50%;
+                    height: 3px;
+                    background: linear-gradient(to right, transparent, var(--primary-light), transparent);
+                    bottom: -8px;
+                    left: 25%;
+                }}
+                
+                .options-container {{
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                    margin-top: 1.5rem;
+                }}
+                
                 .btn-option {{
+                    display: flex;
+                    align-items: center;
                     width: 100%;
-                    padding: 15px 20px;
-                    margin-top: 1rem;
+                    padding: 1.2rem 1.5rem;
                     border: none;
                     border-radius: 15px;
-                    background: #48bb78;
-                    color: white;
-                    font-size: 16px;
+                    background: var(--primary-light);
+                    color: var(--white);
+                    font-size: 1rem;
                     font-weight: bold;
                     text-align: left;
                     cursor: pointer;
-                    transition: transform 0.2s ease, background 0.3s ease;
-                    box-shadow: 0px 6px 12px rgba(0,0,0,0.1);
+                    transition: var(--transition);
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    position: relative;
+                    overflow: hidden;
                 }}
-                .btn-option span {{
-                    font-size: 14px;
-                    font-weight: normal;
-                    color: #e6fffa;
-                }}
+                
                 .btn-option:hover {{
-                    transform: scale(1.03);
-                    background: #38a169;
+                    transform: translateY(-3px);
+                    background: var(--primary-dark);
+                    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
                 }}
+                
+                .btn-option:active {{
+                    transform: translateY(0);
+                }}
+                
+                .btn-icon {{
+                    font-size: 1.8rem;
+                    margin-right: 1rem;
+                    flex-shrink: 0;
+                }}
+                
+                .btn-content {{
+                    flex-grow: 1;
+                }}
+                
+                .btn-title {{
+                    display: block;
+                    font-size: 1.1rem;
+                    margin-bottom: 0.3rem;
+                }}
+                
+                .btn-desc {{
+                    display: block;
+                    font-size: 0.9rem;
+                    font-weight: normal;
+                    opacity: 0.9;
+                }}
+                
+                .btn-arrow {{
+                    font-size: 1.2rem;
+                    opacity: 0.8;
+                    transition: var(--transition);
+                }}
+                
+                .btn-option:hover .btn-arrow {{
+                    transform: translateX(4px);
+                }}
+                
+                .access-denied {{
+                    background-color: #fed7d7;
+                    color: var(--danger);
+                    padding: 1rem;
+                    border-radius: 12px;
+                    margin-top: 1.5rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.8rem;
+                }}
+                
                 @keyframes fadeIn {{
-                    from {{ opacity: 0; transform: translateY(-15px); }}
-                    to {{ opacity: 1; transform: translateY(0); }}
+                    from {{ 
+                        opacity: 0; 
+                        transform: translateY(-15px); 
+                    }}
+                    to {{ 
+                        opacity: 1; 
+                        transform: translateY(0); 
+                    }}
+                }}
+                
+                /* Responsive */
+                @media (max-width: 600px) {{
+                    .card {{
+                        padding: 1.8rem;
+                    }}
+                    
+                    .btn-option {{
+                        padding: 1rem;
+                    }}
+                    
+                    .btn-icon {{
+                        font-size: 1.5rem;
+                        margin-right: 0.8rem;
+                    }}
                 }}
             </style>
         </head>
         <body>
             <div class="card">
-                <h2>🌿 Bienvenido, {usuario['nombre']} {usuario['apellidos']}</h2>
-                <p><strong>Correo:</strong> {usuario['correo']}</p>
-                <p><strong>Ciudad:</strong> {usuario['ciudad']}</p>
-                <h3>Selecciona tu versión</h3>
-                {version_options}
+                <div class="logo">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                
+                <h2>¡Bienvenido, {usuario['nombre']} {usuario['apellidos']}!</h2>
+                
+                <div class="user-info">
+                    <div class="info-row">
+                        <span class="info-label">Correo:</span>
+                        <span class="info-value">{usuario['correo']}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Ciudad:</span>
+                        <span class="info-value">{usuario['ciudad']}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Documento:</span>
+                        <span class="info-value">{tipo_documento}: {numero_identificacion}</span>
+                    </div>
+                </div>
+                
+                <h3>Selecciona una opción</h3>
+                
+                <div class="options-container">
+                    {version_options}
+                </div>
             </div>
         </body>
         </html>
