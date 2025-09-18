@@ -6623,74 +6623,178 @@ async def guardar_respuestas(request: Request, usuario_id: int = Form(...), pagi
                 ruta_descarga = f"/descargar_pdf?usuario_id={usuario_id}"
                 
             contenido_html = f"""
-            <html>
-            <head>
-                <title>¡Buen trabajo!</title>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-                <style>
-                    body {{
-                        font-family: 'Roboto', sans-serif;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        min-height: 100vh;
-                        margin: 0;
-                        background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
-                    }}
+            <<html>
+        <head>
+            <title>¡Buen trabajo!</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+            <style>
+                body {{
+                    font-family: 'Roboto', sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    margin: 0;
+                    background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+                    padding: 20px;
+                }}
+                .container {{
+                    background: white;
+                    padding: 40px;
+                    border-radius: 16px;
+                    box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.15);
+                    max-width: 900px;
+                    width: 95%;
+                    text-align: center;
+                    animation: fadeIn 0.8s ease-in-out;
+                }}
+                h1 {{
+                    color: #222;
+                    margin-bottom: 20px;
+                    font-size: 32px;
+                    line-height: 1.3;
+                }}
+                p {{
+                    font-size: 18px;
+                    color: #555;
+                    margin-bottom: 20px;
+                    line-height: 1.6;
+                }}
+                .content-grid {{
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 25px;
+                    margin: 30px 0;
+                }}
+                .section {{
+                    padding: 25px;
+                    background-color: #f9f9f9;
+                    border-radius: 12px;
+                    text-align: left;
+                }}
+                .section-title {{
+                    font-weight: 700;
+                    color: #333;
+                    margin-bottom: 15px;
+                    font-size: 22px;
+                }}
+                .button-container {{
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    gap: 15px;
+                    margin: 20px 0;
+                }}
+                button {{
+                    background-color: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 16px 28px;
+                    font-size: 18px;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    transition: transform 0.2s, background 0.3s;
+                    min-width: 200px;
+                }}
+                button:hover {{
+                    background-color: #0056b3;
+                    transform: translateY(-2px);
+                }}
+                button:active {{
+                    transform: scale(0.97);
+                }}
+                #visualizacionBtn {{
+                    display: none;
+                    background-color: #28a745;
+                }}
+                #visualizacionBtn:hover {{
+                    background-color: #218838;
+                }}
+                .libro-btn {{
+                    background-color: #ff6b35;
+                }}
+                .libro-btn:hover {{
+                    background-color: #e25a2c;
+                }}
+                .chat-btn {{
+                    background-color: #17a2b8;
+                }}
+                .chat-btn:hover {{
+                    background-color: #138496;
+                }}
+                .continuar-msg {{
+                    margin: 25px 0;
+                    font-style: italic;
+                    color: #666;
+                    font-size: 19px;
+                    padding: 15px;
+                    background-color: rgba(255, 107, 53, 0.1);
+                    border-radius: 10px;
+                }}
+                @keyframes fadeIn {{
+                    from {{ opacity: 0; transform: translateY(-20px); }}
+                    to {{ opacity: 1; transform: translateY(0); }}
+                }}
+                @media (max-width: 768px) {{
                     .container {{
-                        background: white;
-                        padding: 40px 30px;
-                        border-radius: 16px;
-                        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.15);
-                        max-width: 500px;
-                        width: 90%;
-                        text-align: center;
-                        animation: fadeIn 0.8s ease-in-out;
+                        padding: 25px 20px;
                     }}
-                    h1 {{
-                        color: #222;
-                        margin-bottom: 15px;
-                        font-size: 28px;
-                    }}
-                    p {{
-                        font-size: 18px;
-                        color: #555;
-                        margin-bottom: 25px;
+                    .button-container {{
+                        flex-direction: column;
+                        align-items: center;
                     }}
                     button {{
-                        background-color: #007bff;
-                        color: white;
-                        border: none;
-                        padding: 14px 28px;
-                        font-size: 17px;
-                        border-radius: 10px;
-                        cursor: pointer;
-                        margin: 10px 5px;
-                        transition: transform 0.2s, background 0.3s;
+                        width: 100%;
+                        min-width: auto;
                     }}
-                    button:hover {{
-                        background-color: #0056b3;
-                        transform: translateY(-2px);
-                    }}
-                    button:active {{
-                        transform: scale(0.97);
-                    }}
-                    @keyframes fadeIn {{
-                        from {{ opacity: 0; transform: translateY(-20px); }}
-                        to {{ opacity: 1; transform: translateY(0); }}
-                    }}
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <h1>¡Gracias por tu tiempo!</h1>
-                    <p>Haz clic en el botón para continuar:</p>
-                    <button onclick="window.location.href='{ruta_descarga}'">📥 Generar Reporte Interactivo y Descargar Análisis</button>
-                    <button onclick="window.location.href='/chat'">💬 Ingresar a Chat</button>
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Tu viaje hacia el bienestar integral comienza aquí</h1>
+                
+                <p>Has dado un paso importante al completar tu diagnóstico de bienestar. Ahora tienes diferentes formas de profundizar en tus resultados y seguir explorando cómo mejorar tu vida día a día.</p>
+                
+                <!-- Contenedor principal de botones centrados -->
+                <div class="button-container">
+                    <button onclick="descargarAnalisis()">📥 Descargar Análisis</button>
+                    <button class="chat-btn" onclick="window.location.href='/chat'">💬 Ingresar a Chat</button>
                 </div>
-            </body>
-            </html>
+                
+                <p class="continuar-msg">Elige por dónde continuar y sigue avanzando hacia una mejor versión de ti. 🌱✨</p>
+                
+                <div class="content-grid">
+                    <div class="section">
+                        <div class="section-title">¡Gracias por darte este espacio de autoconocimiento!</div>
+                        <p>Has completado el diagnóstico de bienestar integral, un primer paso importante para reconocer cómo estás hoy y hacia dónde quieres avanzar.</p>
+                        <p>Como un regalo por tu compromiso contigo mismo, queremos obsequiarte el libro "La pausa que salva vidas", una invitación a detenerte, respirar y redescubrir el poder de las pequeñas pausas conscientes que pueden transformar tu salud, tu energía y tu vida.</p>
+                        
+                        <div class="button-container">
+                            <button class="libro-btn" onclick="descargarLibro()">📚 Descargar Libro</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="button-container">
+                    <button id="visualizacionBtn" onclick="window.location.href='/dashboard-content/{usuario_id}'">📊 Visualización</button>
+                </div>
+            </div>
+
+            <script>
+                function descargarAnalisis() {{
+                    // Redirigir para descargar el análisis
+                    window.location.href = '{ruta_descarga}';
+                }}
+                
+                function descargarLibro() {{
+                    // Redirigir para descargar el libro desde la carpeta static
+                    window.location.href = '/statics/libros/mi_libro.pdf';
+                }}
+            </script>
+        </body>
+        </html>
             """
             return HTMLResponse(content=contenido_html)
     elif version == "esencial":
