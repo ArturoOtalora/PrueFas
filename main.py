@@ -7183,7 +7183,7 @@ async def guardar_respuestas(request: Request, usuario_id: int = Form(...), pagi
     </script>
 </body>
 </html>
-"""
+
             """
             return HTMLResponse(content=contenido_html)
     elif version == "esencial":
