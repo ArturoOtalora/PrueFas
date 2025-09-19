@@ -6930,7 +6930,7 @@ async def guardar_respuestas(request: Request, usuario_id: int = Form(...), pagi
                 ruta_descarga = f"/descargar_pdf?usuario_id={usuario_id}"
                 
             contenido_html = f"""
-        <html>
+<html>
 <head>
     <title>¡Buen trabajo!</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7039,24 +7039,21 @@ async def guardar_respuestas(request: Request, usuario_id: int = Form(...), pagi
             background-color: rgba(255, 107, 53, 0.1);
             border-radius: 10px;
         }}
-        
         /* Estilos para la barra de progreso */
         .progress-container {{
             width: 100%;
-            background-color: #f1f1f1;
+            height: 20px;
+            background-color: #f0f0f0;
             border-radius: 10px;
             margin: 20px 0;
-            display: none;
             overflow: hidden;
+            display: none;
         }}
         .progress-bar {{
+            height: 100%;
             width: 0%;
-            height: 20px;
-            background-color: #4CAF50;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
             border-radius: 10px;
-            text-align: center;
-            line-height: 20px;
-            color: white;
             transition: width 0.3s ease;
         }}
         .progress-text {{
@@ -7064,7 +7061,15 @@ async def guardar_respuestas(request: Request, usuario_id: int = Form(...), pagi
             font-size: 16px;
             color: #555;
         }}
-        
+        .progress-cancel {{
+            margin-top: 10px;
+            background: none;
+            border: none;
+            color: #ff5252;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 14px;
+        }}
         @keyframes fadeIn {{
             from {{ opacity: 0; transform: translateY(-20px); }}
             to {{ opacity: 1; transform: translateY(0); }}
@@ -7092,15 +7097,16 @@ async def guardar_respuestas(request: Request, usuario_id: int = Form(...), pagi
         
         <!-- Contenedor principal de botones centrados -->
         <div class="button-container">
-            <button onclick="iniciarDescarga()">📥 Descargar Análisis</button>
+            <button id="descargarBtn" onclick="iniciarDescarga()">📥 Descargar Análisis</button>
             <button class="chat-btn" onclick="window.location.href='/chat'">💬 Ingresar a Chat</button>
         </div>
         
-        <!-- Barra de progreso (inicialmente oculta) -->
-        <div class="progress-container" id="progressContainer">
-            <div class="progress-bar" id="progressBar">0%</div>
+        <!-- Contenedor de progreso (inicialmente oculto) -->
+        <div id="progressContainer" class="progress-container">
+            <div id="progressBar" class="progress-bar"></div>
         </div>
-        <div class="progress-text" id="progressText">Preparando descarga...</div>
+        <div id="progressText" class="progress-text">Preparando análisis... 0%</div>
+        <button id="progressCancel" class="progress-cancel" onclick="cancelarDescarga()" style="display: none;">Cancelar descarga</button>
         
         <p class="continuar-msg">Elige por dónde continuar y sigue avanzando hacia una mejor versión de ti. 🌱✨</p>
         
@@ -7122,68 +7128,123 @@ async def guardar_respuestas(request: Request, usuario_id: int = Form(...), pagi
     </div>
 
     <script>
+        let descargaEnProgreso = false;
+        let xhr = null;
+        
         function iniciarDescarga() {{
-            // Ocultar botones y mostrar barra de progreso
-            document.querySelector('.button-container').style.display = 'none';
-            document.getElementById('progressContainer').style.display = 'block';
+            if (descargaEnProgreso) return;
             
-            // Iniciar la simulación de progreso
-            simularProgreso();
+            // Ocultar botón de descarga y mostrar barra de progreso
+            document.getElementById('descargarBtn').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('progressCancel').style.display = 'block';
+            descargaEnProgreso = true;
+            
+            // Crear una solicitud XMLHttpRequest para monitorear el progreso
+            xhr = new XMLHttpRequest();
+            xhr.open('GET', '{ruta_descarga}', true);
+            xhr.responseType = 'blob';
+            
+            // Monitorear el progreso de la descarga
+            xhr.addEventListener('progress', function(e) {{
+                if (e.lengthComputable) {{
+                    const porcentaje = (e.loaded / e.total) * 100;
+                    actualizarProgreso(porcentaje);
+                }}
+            }});
+            
+            // Cuando la descarga se complete
+            xhr.onload = function() {{
+                if (this.status === 200) {{
+                    const blob = this.response;
+                    const fileName = 'analisis_bienestar.pdf';
+                    
+                    // Crear un enlace para descargar el archivo
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    
+                    // Completar la descarga
+                    completarDescarga();
+                }} else {{
+                    // Manejar errores
+                    document.getElementById('progressText').textContent = 'Error en la descarga. Intenta nuevamente.';
+                    setTimeout(() => {{
+                        cancelarDescarga();
+                    }}, 2000);
+                }}
+            }};
+            
+            // Manejar errores de red
+            xhr.onerror = function() {{
+                document.getElementById('progressText').textContent = 'Error de conexión. Intenta nuevamente.';
+                setTimeout(() => {{
+                    cancelarDescarga();
+                }}, 2000);
+            }};
+            
+            // Iniciar la descarga
+            xhr.send();
         }}
         
-        function simularProgreso() {{
-            let progress = 0;
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
+        function actualizarProgreso(porcentaje) {{
+            // Actualizar barra de progreso y texto
+            document.getElementById('progressBar').style.width = porcentaje + '%';
+            document.getElementById('progressText').textContent = 
+                `Descargando análisis... ${{Math.round(porcentaje)}}%`;
+        }}
+        
+        function completarDescarga() {{
+            document.getElementById('progressText').textContent = '¡Descarga completada!';
             
-            // Simular progreso de descarga
-            const interval = setInterval(() => {{
-                progress += Math.random() * 10;
-                if (progress >= 100) {{
-                    progress = 100;
-                    clearInterval(interval);
-                    
-                    // Actualizar barra al 100%
-                    progressBar.style.width = progress + '%';
-                    progressBar.textContent = progress.toFixed(0) + '%';
-                    progressText.textContent = '¡Descarga completada!';
-                    
-                    // Redirigir para descargar el análisis después de un breve retraso
-                    setTimeout(function() {{
-                        window.location.href = '{ruta_descarga}';
-                        
-                        // Mostrar el botón de visualización después de otro breve retraso
-                        setTimeout(function() {{
-                            document.getElementById('visualizacionBtn').style.display = 'inline-block';
-                            document.querySelector('.button-container').style.display = 'flex';
-                            document.getElementById('progressContainer').style.display = 'none';
-                        }}, 1000);
-                    }}, 1000);
-                }} else {{
-                    // Actualizar barra de progreso
-                    progressBar.style.width = progress + '%';
-                    progressBar.textContent = progress.toFixed(0) + '%';
-                    
-                    // Actualizar texto según el progreso
-                    if (progress < 30) {{
-                        progressText.textContent = 'Preparando archivo...';
-                    }} else if (progress < 70) {{
-                        progressText.textContent = 'Descargando...';
-                    }} else {{
-                        progressText.textContent = 'Finalizando...';
-                    }}
-                }}
-            }}, 200); // Actualizar cada 200ms
+            // Restablecer la interfaz después de la descarga
+            setTimeout(() => {{
+                document.getElementById('progressContainer').style.display = 'none';
+                document.getElementById('progressCancel').style.display = 'none';
+                document.getElementById('descargarBtn').style.display = 'block';
+                document.getElementById('progressBar').style.width = '0%';
+                document.getElementById('progressText').textContent = 'Preparando análisis... 0%';
+                descargaEnProgreso = false;
+                xhr = null;
+            }}, 1500);
+        }}
+        
+        function cancelarDescarga() {{
+            if (!descargaEnProgreso) return;
+            
+            // Cancelar la solicitud XHR si existe
+            if (xhr) {{
+                xhr.abort();
+            }}
+            
+            descargaEnProgreso = false;
+            
+            // Restablecer la interfaz
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('progressCancel').style.display = 'none';
+            document.getElementById('descargarBtn').style.display = 'block';
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressText').textContent = 'Preparando análisis... 0%';
+            xhr = null;
         }}
         
         function descargarLibro() {{
             // Redirigir para descargar el libro desde la carpeta static
             window.location.href = '/statics/libros/mi_libro.pdf';
         }}
+        
+        // Mostrar el botón de visualización si hay un usuario_id
+        if ('{usuario_id}' && '{usuario_id}' !== 'None') {{
+            document.getElementById('visualizacionBtn').style.display = 'block';
+        }}
     </script>
 </body>
 </html>
-
             """
             return HTMLResponse(content=contenido_html)
     elif version == "esencial":
