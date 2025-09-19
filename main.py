@@ -37,6 +37,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import logging
 from flask import current_app
+import shutil
+from fastapi.responses import FileResponse
 
 # Configurar la conexión a MySQL desde Railway
 DB_HOST = "shuttle.proxy.rlwy.net"
@@ -48,6 +50,10 @@ DB_PORT = 17125
 
 app = FastAPI()
 
+@app.get("/backup-statics")
+def backup_statics():
+    shutil.make_archive("statics_backup", 'zip', "statics")
+    return FileResponse("statics_backup.zip", media_type="application/zip", filename="statics_backup.zip")
 
 
 app.mount("/statics", StaticFiles(directory="statics"), name="statics")
