@@ -7105,7 +7105,7 @@ async def guardar_respuestas(request: Request, usuario_id: int = Form(...), pagi
         <div id="progressContainer" class="progress-container">
             <div id="progressBar" class="progress-bar"></div>
         </div>
-        <div id="progressText" class="progress-text">Preparando análisis... 0%</div>
+        <div id="progressText" class="progress-text">Preparando análisis... 5%</div>
         <button id="progressCancel" class="progress-cancel" onclick="cancelarDescarga()" style="display: none;">Cancelar descarga</button>
         
         <p class="continuar-msg">Elige por dónde continuar y sigue avanzando hacia una mejor versión de ti. 🌱✨</p>
