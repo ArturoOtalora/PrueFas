@@ -121,6 +121,8 @@ def guardar_usuario(
     tipo_documento: str = Form(...),
     numero_identificacion: int = Form(...),
     correo: str = Form(...),
+    telefono: str = Form(...),  # Nuevo campo
+    eps: str = Form(...),       # Nuevo campo
     sexo: str = Form(...),
     Peso: str = Form(...),
     Altura: str = Form(...),
@@ -128,9 +130,12 @@ def guardar_usuario(
     grado_escolaridad: str = Form(...),
     antiguedad: str = Form(...),
     ciudad: str = Form(...),
+    barrio: str = Form(...),    # Nuevo campo alineado con formulario
     Profesion: str = Form(...),
     Empresa: str = Form(...),
     otraEmpresa: str = Form(None),
+    situacion_actual: str = Form(...),
+    con_quien_vives: str = Form(...),
     version: str = Form(...) 
 ):
     # Inicializar las variables como None
@@ -143,6 +148,19 @@ def guardar_usuario(
 
         conn = get_db_connection()
         cursor = conn.cursor() 
+
+        cursor.execute("""
+            ALTER TABLE RespuestasResil 
+            MODIFY COLUMN Score_Physical_pct DECIMAL(5,2),
+            MODIFY COLUMN Score_Emotional_pct DECIMAL(5,2),
+            MODIFY COLUMN Score_Mental_pct DECIMAL(5,2),
+            MODIFY COLUMN Score_Existential_pct DECIMAL(5,2),
+            MODIFY COLUMN Score_Financial_pct DECIMAL(5,2),
+            MODIFY COLUMN Score_Environmental_pct DECIMAL(5,2),
+            MODIFY COLUMN Score_Social_pct DECIMAL(5,2),
+            MODIFY COLUMN Composite_Score_pct DECIMAL(5,2)
+        """)
+        conn.commit()
 
         # Verificar si el número de identificación ya existe
         cursor.execute("SELECT COUNT(*) FROM usuarios WHERE numero_identificacion = %s", (numero_identificacion,))
@@ -204,10 +222,10 @@ def guardar_usuario(
             # Insertar usuario si no existe y no seleccionó Chat
             cursor.execute(
                 """
-                INSERT INTO usuarios (nombre, apellidos, tipo_documento, numero_identificacion, correo, sexo, Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad, Profesion, Empresa)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO usuarios (nombre, apellidos, tipo_documento, numero_identificacion, correo,telefono,eps, sexo, Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad,barrio, Profesion, Empresa, situacion_actual, con_quien_vives)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,%s,%s,%s)
                 """,
-                (nombre, apellidos, tipo_documento, numero_identificacion, correo, sexo, Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad, Profesion, empresa_final)
+                (nombre, apellidos, tipo_documento, numero_identificacion, correo, telefono, eps, sexo, Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad, barrio, Profesion, empresa_final, situacion_actual, con_quien_vives)
             )
             conn.commit()
 
@@ -237,6 +255,1628 @@ def guardar_usuario(
         if cursor is not None:
             cursor.close()
         if conn is not None:
+            conn.close()
+
+@app.get("/cuestionario_resiliencia", response_class=HTMLResponse)
+def cuestionario_resiliencia():
+    return """
+    <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Bienestar Integral</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --accent: #f72585;
+            --success: #4cc9f0;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --border-radius: 16px;
+            --box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            color: var(--gray);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .introduction {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: var(--box-shadow);
+            border-left: 5px solid var(--success);
+        }
+
+        .introduction h2 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .introduction h2 i {
+            margin-right: 10px;
+            color: var(--accent);
+        }
+
+        .introduction p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .progress-container {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--box-shadow);
+            position: sticky;
+            top: 20px;
+            z-index: 10;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background: var(--light-gray);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary), var(--success));
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.8s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        .question-card {
+            background: white;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: var(--box-shadow);
+            transition: var(--transition);
+            border-left: 5px solid var(--primary);
+        }
+
+        .question-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+
+        .question-header {
+            background: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .question-number {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .question-number i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .question-category {
+            background: var(--light);
+            color: var(--gray);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .question-body {
+            padding: 20px;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: var(--dark);
+            line-height: 1.5;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .option-item {
+            position: relative;
+        }
+
+        .option-input {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .option-label {
+            display: block;
+            padding: 12px 15px;
+            background: var(--light);
+            border: 2px solid var(--light-gray);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        .option-input:checked ~ .option-label {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.2);
+        }
+
+        .option-input:not(:checked):hover ~ .option-label {
+            border-color: var(--primary);
+            background: rgba(67, 97, 238, 0.05);
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: rgba(67, 97, 238, 0.05);
+        }
+
+        .btn i {
+            margin-right: 8px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 600px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            transform: translateY(20px);
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .modal-body {
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .navigation {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .question-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+
+        .floating-info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            cursor: pointer;
+            z-index: 100;
+            transition: var(--transition);
+        }
+
+        .floating-info:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(67, 97, 238, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0); }
+        }
+
+        /* Estilos para el contador de preguntas */
+        .question-counter {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        /* Indicador visual de categoría */
+        .category-indicator {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .category-indicator i {
+            margin-right: 10px;
+        }
+        
+        /* Estilo para preguntas requeridas */
+        .required::after {
+            content: " *";
+            color: var(--accent);
+        }
+        
+        /* Efecto de scroll suave */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Animación de entrada para las preguntas */
+        .question-card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s forwards;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Estilo para el botón de scroll arriba */
+        .scroll-top {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            cursor: pointer;
+            z-index: 100;
+            transition: var(--transition);
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .scroll-top.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .scroll-top:hover {
+            background: var(--secondary);
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">Análisis Integral de Resiliencia</div>
+            <div class="tagline">Tu evaluación integral de bienestar</div>
+        </header>
+
+        <div class="introduction">
+            <h2><i class="fas fa-info-circle"></i> Cuestionario de Evaluación de Resiliencia</h2>
+            <p>Este cuestionario está diseñado para medir tu nivel de resiliencia, es decir, tu capacidad para adaptarte y recuperarte ante situaciones adversas. La resiliencia es una habilidad que nos permite enfrentar los desafíos de la vida con fortaleza y flexibilidad.</p>
+            <p>El cuestionario evalúa diferentes dimensiones de tu bienestar que están relacionadas con tu capacidad de resiliencia. Por favor, responde cada pregunta con sinceridad, reflexionando sobre tus experiencias recientes.</p>
+            <p>No hay respuestas correctas o incorrectas, solo tu experiencia personal. Al finalizar, recibirás un análisis de tus áreas de fortaleza y oportunidades de crecimiento.</p>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-info">
+                <span>Progreso</span>
+                <span id="progress-percentage">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </div>
+
+        <form id="wellness-form" method="post" action="/guardar_resiliencia">
+            <input type="hidden" name="usuario_id" id="usuario_id" value="">
+            
+            <!-- Pregunta 1 -->
+            <div class="question-card" style="animation-delay: 0.1s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-heartbeat"></i> Pregunta 1</div>
+                    <div class="question-category">Bienestar Físico</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">En la última semana, ¿con qué frecuencia realizaste actividad física al menos 30 minutos?</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_1" value="0" class="option-input" required>
+                            <span class="option-label">Nunca</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_1" value="1" class="option-input">
+                            <span class="option-label">1-2 días</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_1" value="2" class="option-input">
+                            <span class="option-label">3-4 días</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_1" value="3" class="option-input">
+                            <span class="option-label">5+ días</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 2 -->
+            <div class="question-card" style="animation-delay: 0.2s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-heartbeat"></i> Pregunta 2</div>
+                    <div class="question-category">Bienestar Físico</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">¿Cómo calificarías tu nivel de energía física en los últimos 7 días?</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_2" value="0" class="option-input" required>
+                            <span class="option-label">Muy bajo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_2" value="1" class="option-input">
+                            <span class="option-label">Bajo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_2" value="2" class="option-input">
+                            <span class="option-label">Medio</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_2" value="3" class="option-input">
+                            <span class="option-label">Alto</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_2" value="4" class="option-input">
+                            <span class="option-label">Muy alto</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 3 -->
+            <div class="question-card" style="animation-delay: 0.3s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-heartbeat"></i> Pregunta 3</div>
+                    <div class="question-category">Bienestar Físico</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">En el último mes, ¿qué tan satisfecho/a estás con tu calidad de sueño?</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_3" value="0" class="option-input" required>
+                            <span class="option-label">Nada satisfecho/a</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_3" value="1" class="option-input">
+                            <span class="option-label">Poco satisfecho/a</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_3" value="2" class="option-input">
+                            <span class="option-label">Neutral</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_3" value="3" class="option-input">
+                            <span class="option-label">Satisfecho/a</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_3" value="4" class="option-input">
+                            <span class="option-label">Muy satisfecho/a</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 4 -->
+            <div class="question-card" style="animation-delay: 0.4s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-smile"></i> Pregunta 4</div>
+                    <div class="question-category">Bienestar Emocional</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">En general, me siento satisfecho/a con mi vida.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_4" value="0" class="option-input" required>
+                            <span class="option-label">Totalmente en desacuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_4" value="1" class="option-input">
+                            <span class="option-label">En desacuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_4" value="2" class="option-input">
+                            <span class="option-label">Neutral</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_4" value="3" class="option-input">
+                            <span class="option-label">De acuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_4" value="4" class="option-input">
+                            <span class="option-label">Muy de acuerdo</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 5 -->
+            <div class="question-card" style="animation-delay: 0.5s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-smile"></i> Pregunta 5</div>
+                    <div class="question-category">Bienestar Emocional</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">He sentido alegría y entusiasmo en mi día a día.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_5" value="0" class="option-input" required>
+                            <span class="option-label">Nunca</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_5" value="1" class="option-input">
+                            <span class="option-label">Pocas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_5" value="2" class="option-input">
+                            <span class="option-label">Algunas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_5" value="3" class="option-input">
+                            <span class="option-label">Muchas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_5" value="4" class="option-input">
+                            <span class="option-label">Siempre</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 6 -->
+            <div class="question-card" style="animation-delay: 0.6s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-smile"></i> Pregunta 6</div>
+                    <div class="question-category">Bienestar Emocional</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">He sentido estrés o preocupación excesiva.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_6" value="0" class="option-input" required>
+                            <span class="option-label">Nunca</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_6" value="1" class="option-input">
+                            <span class="option-label">Pocas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_6" value="2" class="option-input">
+                            <span class="option-label">Algunas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_6" value="3" class="option-input">
+                            <span class="option-label">Muchas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_6" value="4" class="option-input">
+                            <span class="option-label">Siempre</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 7 -->
+            <div class="question-card" style="animation-delay: 0.7s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-brain"></i> Pregunta 7</div>
+                    <div class="question-category">Bienestar Mental</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">En los últimos 14 días, me he sentido útil y capaz de enfrentar dificultades.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_7" value="0" class="option-input" required>
+                            <span class="option-label">Nunca</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_7" value="1" class="option-input">
+                            <span class="option-label">Pocas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_7" value="2" class="option-input">
+                            <span class="option-label">Algunas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_7" value="3" class="option-input">
+                            <span class="option-label">Muchas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_7" value="4" class="option-input">
+                            <span class="option-label">Siempre</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 8 -->
+            <div class="question-card" style="animation-delay: 0.8s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-brain"></i> Pregunta 8</div>
+                    <div class="question-category">Bienestar Mental</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">En los últimos 14 días, me he sentido triste o deprimido/a.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_8" value="0" class="option-input" required>
+                            <span class="option-label">Nunca</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_8" value="1" class="option-input">
+                            <span class="option-label">Pocas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_8" value="2" class="option-input">
+                            <span class="option-label">Algunas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_8" value="3" class="option-input">
+                            <span class="option-label">Muchas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_8" value="4" class="option-input">
+                            <span class="option-label">Siempre</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 9 -->
+            <div class="question-card" style="animation-delay: 0.9s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-brain"></i> Pregunta 9</div>
+                    <div class="question-category">Bienestar Mental</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">En los últimos 14 días, me he sentido nervioso/a o con ansiedad.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_9" value="0" class="option-input" required>
+                            <span class="option-label">Nunca</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_9" value="1" class="option-input">
+                            <span class="option-label">Pocas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_9" value="2" class="option-input">
+                            <span class="option-label">Algunas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_9" value="3" class="option-input">
+                            <span class="option-label">Muchas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_9" value="4" class="option-input">
+                            <span class="option-label">Siempre</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 10 -->
+            <div class="question-card" style="animation-delay: 1.0s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-search"></i> Pregunta 10</div>
+                    <div class="question-category">Bienestar Existencial</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">Siento que mi vida tiene un propósito claro.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_10" value="0" class="option-input" required>
+                            <span class="option-label">Totalmente en desacuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_10" value="1" class="option-input">
+                            <span class="option-label">En desacuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_10" value="2" class="option-input">
+                            <span class="option-label">Neutral</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_10" value="3" class="option-input">
+                            <span class="option-label">De acuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_10" value="4" class="option-input">
+                            <span class="option-label">Muy de acuerdo</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 11 -->
+            <div class="question-card" style="animation-delay: 1.1s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-search"></i> Pregunta 11</div>
+                    <div class="question-category">Bienestar Existencial</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">Tengo metas que le dan sentido a lo que hago cada día.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_11" value="0" class="option-input" required>
+                            <span class="option-label">Nada de acuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_11" value="1" class="option-input">
+                            <span class="option-label">Poco de acuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_11" value="2" class="option-input">
+                            <span class="option-label">Neutral</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_11" value="3" class="option-input">
+                            <span class="option-label">De acuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_11" value="4" class="option-input">
+                            <span class="option-label">Muy de acuerdo</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 12 -->
+            <div class="question-card" style="animation-delay: 1.2s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-search"></i> Pregunta 12</div>
+                    <div class="question-category">Bienestar Existencial</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">A veces siento que mi vida carece de dirección.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_12" value="0" class="option-input" required>
+                            <span class="option-label">Muy de acuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_12" value="1" class="option-input">
+                            <span class="option-label">De acuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_12" value="2" class="option-input">
+                            <span class="option-label">Neutral</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_12" value="3" class="option-input">
+                            <span class="option-label">En desacuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_12" value="4" class="option-input">
+                            <span class="option-label">Muy en desacuerdo</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 13 -->
+            <div class="question-card" style="animation-delay: 1.3s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-dollar-sign"></i> Pregunta 13</div>
+                    <div class="question-category">Bienestar Financiero</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">En el último mes, ¿con qué frecuencia te preocupaste por no tener suficiente dinero para cubrir tus gastos básicos?</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_13" value="0" class="option-input" required>
+                            <span class="option-label">Nunca</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_13" value="1" class="option-input">
+                            <span class="option-label">Pocas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_13" value="2" class="option-input">
+                            <span class="option-label">Algunas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_13" value="3" class="option-input">
+                            <span class="option-label">Muchas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_13" value="4" class="option-input">
+                            <span class="option-label">Siempre</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 14 -->
+            <div class="question-card" style="animation-delay: 1.4s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-dollar-sign"></i> Pregunta 14</div>
+                    <div class="question-category">Bienestar Financiero</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">Actualmente, ¿sientes que puedes manejar bien tu dinero?</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_14" value="0" class="option-input" required>
+                            <span class="option-label">Nada</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_14" value="1" class="option-input">
+                            <span class="option-label">Poco</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_14" value="2" class="option-input">
+                            <span class="option-label">Regular</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_14" value="3" class="option-input">
+                            <span class="option-label">Bien</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_14" value="4" class="option-input">
+                            <span class="option-label">Muy bien</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 15 -->
+            <div class="question-card" style="animation-delay: 1.5s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-dollar-sign"></i> Pregunta 15</div>
+                    <div class="question-category">Bienestar Financiero</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">Si surgiera una emergencia, ¿podrías contar con recursos para afrontarla?</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_15" value="0" class="option-input" required>
+                            <span class="option-label">No podría en absoluto</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_15" value="1" class="option-input">
+                            <span class="option-label">Difícilmente</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_15" value="2" class="option-input">
+                            <span class="option-label">Posiblemente</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_15" value="3" class="option-input">
+                            <span class="option-label">Sí</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_15" value="4" class="option-input">
+                            <span class="option-label">Totalmente sí</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 16 -->
+            <div class="question-card" style="animation-delay: 1.6s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-leaf"></i> Pregunta 16</div>
+                    <div class="question-category">Bienestar Ambiental</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">Mi barrio o comunidad es un lugar limpio y saludable.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_16" value="0" class="option-input" required>
+                            <span class="option-label">Muy en desacuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_16" value="1" class="option-input">
+                            <span class="option-label">En desacuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_16" value="2" class="option-input">
+                            <span class="option-label">Neutral</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_16" value="3" class="option-input">
+                            <span class="option-label">De acuerdo</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_16" value="4" class="option-input">
+                            <span class="option-label">Muy de acuerdo</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 17 -->
+            <div class="question-card" style="animation-delay: 1.7s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-leaf"></i> Pregunta 17</div>
+                    <div class="question-category">Bienestar Ambiental</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">Tengo acceso a parques o espacios verdes donde puedo relajarme.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_17" value="0" class="option-input" required>
+                            <span class="option-label">Nunca</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_17" value="1" class="option-input">
+                            <span class="option-label">Pocas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_17" value="2" class="option-input">
+                            <span class="option-label">Algunas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_17" value="3" class="option-input">
+                            <span class="option-label">Muchas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_17" value="4" class="option-input">
+                            <span class="option-label">Siempre</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 18 -->
+            <div class="question-card" style="animation-delay: 1.8s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-leaf"></i> Pregunta 18</div>
+                    <div class="question-category">Bienestar Ambiental</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">Me siento seguro/a en el lugar donde vivo.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_18" value="0" class="option-input" required>
+                            <span class="option-label">Nada seguro/a</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_18" value="1" class="option-input">
+                            <span class="option-label">Poco seguro/a</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_18" value="2" class="option-input">
+                            <span class="option-label">Neutral</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_18" value="3" class="option-input">
+                            <span class="option-label">Seguro/a</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_18" value="4" class="option-input">
+                            <span class="option-label">Muy seguro/a</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 19 -->
+            <div class="question-card" style="animation-delay: 1.9s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-users"></i> Pregunta 19</div>
+                    <div class="question-category">Bienestar Social</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">Puedo contar con mi familia cuando necesito apoyo.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_19" value="0" class="option-input" required>
+                            <span class="option-label">Nunca</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_19" value="1" class="option-input">
+                            <span class="option-label">Pocas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_19" value="2" class="option-input">
+                            <span class="option-label">Algunas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_19" value="3" class="option-input">
+                            <span class="option-label">Muchas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_19" value="4" class="option-input">
+                            <span class="option-label">Siempre</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 20 -->
+            <div class="question-card" style="animation-delay: 2.0s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-users"></i> Pregunta 20</div>
+                    <div class="question-category">Bienestar Social</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">Tengo amistades o personas cercanas en quienes confío.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_20" value="0" class="option-input" required>
+                            <span class="option-label">Nunca</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_20" value="1" class="option-input">
+                            <span class="option-label">Pocas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_20" value="2" class="option-input">
+                            <span class="option-label">Algunas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_20" value="3" class="option-input">
+                            <span class="option-label">Muchas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_20" value="4" class="option-input">
+                            <span class="option-label">Siempre</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 21 -->
+            <div class="question-card" style="animation-delay: 2.1s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-users"></i> Pregunta 21</div>
+                    <div class="question-category">Bienestar Social</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">Participo en actividades comunitarias, culturales o deportivas.</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_21" value="0" class="option-input" required>
+                            <span class="option-label">Nunca</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_21" value="1" class="option-input">
+                            <span class="option-label">Pocas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_21" value="2" class="option-input">
+                            <span class="option-label">Algunas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_21" value="3" class="option-input">
+                            <span class="option-label">Muchas veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_21" value="4" class="option-input">
+                            <span class="option-label">Siempre</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 22 -->
+            <div class="question-card" style="animation-delay: 2.2s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-exclamation-triangle"></i> Pregunta 22</div>
+                    <div class="question-category">Factores de Riesgo</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">¿Has consumido alcohol en el último mes?</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_22" value="0" class="option-input" required>
+                            <span class="option-label">Nunca</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_22" value="1" class="option-input">
+                            <span class="option-label">1-2 veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_22" value="2" class="option-input">
+                            <span class="option-label">3-4 veces</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_22" value="3" class="option-input">
+                            <span class="option-label">5+ veces</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 23 -->
+            <div class="question-card" style="animation-delay: 2.3s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-exclamation-triangle"></i> Pregunta 23</div>
+                    <div class="question-category">Factores de Riesgo</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">¿Has consumido alguna otra sustancia (marihuana, cocaína, etc.) en el último mes?</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_23" value="0" class="option-input" required>
+                            <span class="option-label">Sí</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_23" value="1" class="option-input">
+                            <span class="option-label">No</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta 24 -->
+            <div class="question-card" style="animation-delay: 2.4s">
+                <div class="question-header">
+                    <div class="question-number"><i class="fas fa-exclamation-triangle"></i> Pregunta 24</div>
+                    <div class="question-category">Factores de Riesgo</div>
+                </div>
+                <div class="question-body">
+                    <div class="question-text required">¿En el último año has estado expuesto/a a situaciones de violencia (familiar, comunitaria, de pareja)?</div>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_24" value="0" class="option-input" required>
+                            <span class="option-label">Sí</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="pregunta_24" value="1" class="option-input">
+                            <span class="option-label">No</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="navigation">
+                <button type="button" class="btn btn-outline" id="scroll-top-btn">
+                    <i class="fas fa-arrow-up"></i> Volver arriba
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    Finalizar <i class="fas fa-check"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="floating-info pulse" onclick="openModal()">
+        <i class="fas fa-info" style="color: var(--primary);"></i>
+    </div>
+
+    <div class="scroll-top" id="scroll-top">
+        <i class="fas fa-arrow-up"></i>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Análisis Integral de Resiliencia</div>
+            </div>
+            <div class="modal-body">
+                <p>Este cuestionario está diseñado para evaluar diferentes aspectos de tu bienestar. Tus respuestas nos ayudarán a comprender mejor tus necesidades y a proporcionarte recomendaciones personalizadas.</p>
+                <p>Por favor, responde cada pregunta con sinceridad. No hay respuestas correctas o incorrectas, solo tu experiencia personal.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeModal()">Comenzar evaluación</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Funcionalidad para el modal
+        function openModal() {
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+
+        // Actualizar progreso
+        function updateProgress() {
+            const totalQuestions = 24; // Número total de preguntas
+            const answeredQuestions = document.querySelectorAll('.option-input:checked').length;
+            const progressPercentage = Math.round((answeredQuestions / totalQuestions) * 100);
+            
+            document.getElementById('progress-percentage').textContent = `${progressPercentage}%`;
+            document.getElementById('progress-fill').style.width = `${progressPercentage}%`;
+        }
+
+        // Añadir event listeners a todas las opciones
+        document.querySelectorAll('.option-input').forEach(input => {
+            input.addEventListener('change', updateProgress);
+        });
+
+        // Mostrar modal al cargar la página
+        window.addEventListener('load', () => {
+            openModal();
+            // Set usuario_id desde querystring si existe ?usuario_id=123
+            const params = new URLSearchParams(window.location.search);
+            const uid = params.get('usuario_id');
+            if (uid) {
+                document.getElementById('usuario_id').value = uid;
+            }
+            
+            // Inicializar el progreso
+            updateProgress();
+        });
+
+        // Botón de scroll hacia arriba
+        const scrollTopBtn = document.getElementById('scroll-top');
+        
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                scrollTopBtn.classList.add('active');
+            } else {
+                scrollTopBtn.classList.remove('active');
+            }
+        });
+        
+        scrollTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        // Botón "Volver arriba" en el footer
+        document.getElementById('scroll-top-btn').addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        // Validación del formulario antes de enviar
+        document.getElementById('wellness-form').addEventListener('submit', function(e) {
+            const totalQuestions = 24;
+            const answeredQuestions = document.querySelectorAll('.option-input:checked').length;
+            
+            if (answeredQuestions < totalQuestions) {
+                e.preventDefault();
+                alert(`Por favor, responde todas las preguntas. Te faltan ${totalQuestions - answeredQuestions} preguntas por responder.`);
+                // Desplazar a la primera pregunta sin respuesta
+                const unansweredQuestions = document.querySelectorAll('.option-input:not(:checked)');
+                if (unansweredQuestions.length > 0) {
+                    const firstUnanswered = unansweredQuestions[0].closest('.question-card');
+                    firstUnanswered.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Resaltar la pregunta
+                    firstUnanswered.style.boxShadow = '0 0 0 3px var(--accent)';
+                    setTimeout(() => {
+                        firstUnanswered.style.boxShadow = '';
+                    }, 2000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+    """
+
+@app.post("/guardar_resiliencia")
+def guardar_resiliencia(
+    usuario_id: int = Form(...),
+    pregunta_1: int = Form(...),
+    pregunta_2: int = Form(...),
+    pregunta_3: int = Form(...),
+    pregunta_4: int = Form(...),
+    pregunta_5: int = Form(...),
+    pregunta_6: int = Form(...),
+    pregunta_7: int = Form(...),
+    pregunta_8: int = Form(...),
+    pregunta_9: int = Form(...),
+    pregunta_10: int = Form(...),
+    pregunta_11: int = Form(...),
+    pregunta_12: int = Form(...),
+    pregunta_13: int = Form(...),
+    pregunta_14: int = Form(...),
+    pregunta_15: int = Form(...),
+    pregunta_16: int = Form(...),
+    pregunta_17: int = Form(...),
+    pregunta_18: int = Form(...),
+    pregunta_19: int = Form(...),
+    pregunta_20: int = Form(...),
+    pregunta_21: int = Form(...),
+    pregunta_22: int = Form(...),
+    pregunta_23: int = Form(...),
+    pregunta_24: int = Form(...),
+):
+    conn = None
+    cursor = None
+    try:
+        # Normalización a escala Likert 1..5
+        def clamp(value, min_v, max_v):
+            v = int(value)
+            if v < min_v:
+                return min_v
+            if v > max_v:
+                return max_v
+            return v
+
+        # P1: 0..3 (Nunca, 1-2, 3-4, 5+ días) → 1..4
+        p1 = clamp(pregunta_1, 0, 3) + 1
+        # Likert estándar 0..4 → 1..5
+        p2 = clamp(pregunta_2, 0, 4) + 1
+        p3 = clamp(pregunta_3, 0, 4) + 1
+
+        e1 = clamp(pregunta_4, 0, 4) + 1
+        e2 = clamp(pregunta_5, 0, 4) + 1
+        e3 = clamp(pregunta_6, 0, 4) + 1
+
+        m1 = clamp(pregunta_7, 0, 4) + 1
+        m2 = clamp(pregunta_8, 0, 4) + 1
+        m3 = clamp(pregunta_9, 0, 4) + 1
+
+        ex1 = clamp(pregunta_10, 0, 4) + 1
+        ex2 = clamp(pregunta_11, 0, 4) + 1
+        ex3 = clamp(pregunta_12, 0, 4) + 1
+
+        f1 = clamp(pregunta_13, 0, 4) + 1
+        f2 = clamp(pregunta_14, 0, 4) + 1
+        f3 = clamp(pregunta_15, 0, 4) + 1
+
+        env1 = clamp(pregunta_16, 0, 4) + 1
+        env2 = clamp(pregunta_17, 0, 4) + 1
+        env3 = clamp(pregunta_18, 0, 4) + 1
+
+        s1 = clamp(pregunta_19, 0, 4) + 1
+        s2 = clamp(pregunta_20, 0, 4) + 1
+        s3 = clamp(pregunta_21, 0, 4) + 1
+
+        # FR1 (frecuencia 0..3) → 1..4; FR2/FR3: sí/no 0..1
+        fr1 = clamp(pregunta_22, 0, 3) + 1
+        fr2 = clamp(pregunta_23, 0, 1)
+        fr3 = clamp(pregunta_24, 0, 1)
+
+        # Invertir EX3 y dejarlo en 1..5 para cumplir CHECK (1..5)
+        # Si EX3 está en 1..5, entonces 6 - EX3 produce 1..5
+        ex3_invertido = 6 - ex3
+
+        # Escalamiento y puntajes como promedios 1..5
+        def scale_1_4_to_1_5(v):
+            return round(1 + (float(v) - 1) * (4.0 / 3.0), 2)
+
+        # P1 para puntaje en 1..5
+        p1_for_score = scale_1_4_to_1_5(p1)
+
+        # FR para almacenar en 1..5 (cumplir CHECKs)
+        fr1_scaled = scale_1_4_to_1_5(fr1)
+        fr2_scaled = 5 if fr2 == 1 else 1
+        fr3_scaled = 5 if fr3 == 1 else 1
+
+        def avg3(a, b, c):
+            return round((float(a) + float(b) + float(c)) / 3.0, 2)
+
+        score_physical = avg3(p1_for_score, p2, p3)
+        score_emotional = avg3(e1, e2, e3)
+        score_mental = avg3(m1, m2, m3)
+        score_existential = avg3(ex1, ex2, ex3_invertido)
+        score_financial = avg3(f1, f2, f3)
+        score_environmental = avg3(env1, env2, env3)
+        score_social = avg3(s1, s2, s3)
+
+        composite_score = round((
+            score_physical + score_emotional + score_mental +
+            score_existential + score_financial + score_environmental +
+            score_social
+        ) / 7.0, 2)
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            INSERT INTO RespuestasResil (
+                usuario_id, P1_ActividadFisica, P2_Energia, P3_Suenio, 
+                E1_SatisfaccionVida, E2_AlegriaEntusiasmo, E3_EstresPreocupacion,
+                M1_Utilidad_Afrontar, M2_Tristeza, M3_Ansiedad,
+                EX1_Proposito, EX2_MetasSentido, EX3_Direccion_Invertido,
+                F1_PreocupacionGastos, F2_ManejoDinero, F3_AhorrosEmergencia,
+                ENV1_BarrioSaludable, ENV2_AccesoVerde, ENV3_Seguridad,
+                S1_ApoyoFamilia, S2_AmistadesConfianza, S3_ParticipacionComunitaria,
+                FR1, FR2, FR3,
+                Score_Physical_pct, Score_Emotional_pct, Score_Mental_pct,
+                Score_Existential_pct, Score_Financial_pct, Score_Environmental_pct,
+                Score_Social_pct, Composite_Score_pct
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                    %s, %s, %s)
+            ON DUPLICATE KEY UPDATE 
+                P1_ActividadFisica = VALUES(P1_ActividadFisica),
+                P2_Energia = VALUES(P2_Energia),
+                P3_Suenio = VALUES(P3_Suenio),
+                E1_SatisfaccionVida = VALUES(E1_SatisfaccionVida),
+                E2_AlegriaEntusiasmo = VALUES(E2_AlegriaEntusiasmo),
+                E3_EstresPreocupacion = VALUES(E3_EstresPreocupacion),
+                M1_Utilidad_Afrontar = VALUES(M1_Utilidad_Afrontar),
+                M2_Tristeza = VALUES(M2_Tristeza),
+                M3_Ansiedad = VALUES(M3_Ansiedad),
+                EX1_Proposito = VALUES(EX1_Proposito),
+                EX2_MetasSentido = VALUES(EX2_MetasSentido),
+                EX3_Direccion_Invertido = VALUES(EX3_Direccion_Invertido),
+                F1_PreocupacionGastos = VALUES(F1_PreocupacionGastos),
+                F2_ManejoDinero = VALUES(F2_ManejoDinero),
+                F3_AhorrosEmergencia = VALUES(F3_AhorrosEmergencia),
+                ENV1_BarrioSaludable = VALUES(ENV1_BarrioSaludable),
+                ENV2_AccesoVerde = VALUES(ENV2_AccesoVerde),
+                ENV3_Seguridad = VALUES(ENV3_Seguridad),
+                S1_ApoyoFamilia = VALUES(S1_ApoyoFamilia),
+                S2_AmistadesConfianza = VALUES(S2_AmistadesConfianza),
+                S3_ParticipacionComunitaria = VALUES(S3_ParticipacionComunitaria),
+                FR1 = VALUES(FR1),
+                FR2 = VALUES(FR2),
+                FR3 = VALUES(FR3),
+                Score_Physical_pct = VALUES(Score_Physical_pct),
+                Score_Emotional_pct = VALUES(Score_Emotional_pct),
+                Score_Mental_pct = VALUES(Score_Mental_pct),
+                Score_Existential_pct = VALUES(Score_Existential_pct),
+                Score_Financial_pct = VALUES(Score_Financial_pct),
+                Score_Environmental_pct = VALUES(Score_Environmental_pct),
+                Score_Social_pct = VALUES(Score_Social_pct),
+                Composite_Score_pct = VALUES(Composite_Score_pct),
+                fecha_actualizacion = CURRENT_TIMESTAMP
+            """,
+            (
+                usuario_id, p1, p2, p3, e1, e2, e3, m1, m2, m3, ex1, ex2, ex3_invertido,
+                f1, f2, f3, env1, env2, env3, s1, s2, s3, fr1_scaled, fr2_scaled, fr3_scaled,
+                score_physical, score_emotional, score_mental, score_existential,
+                score_financial, score_environmental, score_social, composite_score
+            )
+        )
+
+        conn.commit()
+        return HTMLResponse(
+    content=f"""
+    <html>
+        <head>
+            <title>Gracias</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background: #f4f6f9;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                }}
+                .container {{
+                    background: white;
+                    padding: 40px;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                    text-align: center;
+                    max-width: 500px;
+                }}
+                h1 {{
+                    color: #2d6a4f;
+                    margin-bottom: 20px;
+                }}
+                p {{
+                    font-size: 18px;
+                    color: #555;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>¡Gracias por responder el cuestionario!</h1>
+                <p>Tu información ha sido guardada exitosamente. Pronto recibirás un análisis detallado.</p>
+            </div>
+        </body>
+    </html>
+    """,
+    status_code=200
+)
+
+    except mysql.connector.Error as err:
+        if conn:
+            conn.rollback()
+        print(f"Error al guardar resiliencia: {err}")
+        return HTMLResponse(
+            content=f"<h2>Error en BD</h2><p>{err}</p>",
+            status_code=500
+        )
+    except Exception as err:
+        if conn:
+            conn.rollback()
+        print(f"Error inesperado en guardar_resiliencia: {err}")
+        return HTMLResponse(
+            content=f"<h2>Error</h2><p>{err}</p>",
+            status_code=500
+        )
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
             conn.close()
 
 @app.get("/login", response_class=HTMLResponse)
@@ -388,7 +2028,8 @@ def login(username: str = Form(...), password: str = Form(...)):
         "invitado": "invitado",
         "corevital": "Corevital",
         "advancevital": "AdvanceVital",
-        "premiumvital": "premiumVital"
+        "premiumvital": "premiumVital",
+        "participante": "Participante"
     }
     clave = "Vital2025."
     
@@ -845,6 +2486,14 @@ def mostrar_pagina(request: Request):  # Añadir el parámetro request
             </div>
         </button>
         """
+    elif user_type == "Participante":
+        version_options = """
+        <!-- Versión Resiliencia -->
+        <button onclick="seleccionarVersion('Resiliencia')" style="padding: 15px 20px; border: none; border-radius: 10px; background: #E0F7FA; color: #006064; font-size: 16px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer;">
+            <strong>🛡️ Versión Resiliencia</strong><br>
+            <span style="font-size: 14px; color: #004D40;">Evalúa tu capacidad de adaptación y recuperación.</span>
+        </button>
+        """
     elif user_type == "premiumVital":
         version_options = """
         <!-- Versión Premium -->
@@ -1000,6 +2649,14 @@ def mostrar_pagina(request: Request):  # Añadir el parámetro request
                         <label for="correo">Correo Electrónico:</label>
                         <input type="email" id="correo" name="correo" required>
                     </div>
+                     <div class="form-group">
+                    <label for="telefono">Teléfono de Contacto:</label>
+                    <input type="tel" id="telefono" name="telefono" required>
+                    </div>
+                    <div class="form-group">
+                    <label for="eps">EPS:</label>
+                    <input type="text" id="eps" name="eps" required>
+                    </div>
                     <div class="form-group">
                         <label for="sexo">Sexo:</label>
                         <select id="sexo" name="sexo" required>
@@ -1048,18 +2705,24 @@ def mostrar_pagina(request: Request):  # Añadir el parámetro request
                         <label for="ciudad">Ciudad:</label>
                         <input type="text" id="ciudad" name="ciudad" required>
                     </div>
+                     <div class="form-group">
+                    <label for="barrio">Barrio:</label>
+                    <input type="text" id="barrio" name="barrio" required>
+                    </div>
                     <div class="form-group">
                         <label for="Profesion">Profesión:</label>
                         <input type="text" id="Profesion" name="Profesion" required>
                     </div>
                    <div class="form-group">
-                        <label for="Empresa">Empresa:</label>
+                        <label for="Empresa">Institucion:</label>
                         <select id="Empresa" name="Empresa" required onchange="toggleEmpresaInput(this)">
                             <option value="PARTICULAR">PARTICULAR</option>
                             <option value="SIES SALUD">SIES SALUD</option>
                             <option value="AZISTIA">AZISTIA</option>
                             <option value="HOTEL SONATA 44">HOTEL SONATA 44</option>
                             <option value="PTC-ASSISTAN">PTC-AZISTIA</option>
+                            <option value="ENVIGADO">ENVIGADO</option>
+                            <option value="CEFIT">CEFIT</option>
                             <option value="Otra Empresa">Otra Empresa</option>
                         </select>
                     </div>
@@ -1069,6 +2732,25 @@ def mostrar_pagina(request: Request):  # Añadir el parámetro request
                                 <input type="text" id="otraEmpresa" name="otraEmpresa" style="margin-top: 5px;">
                             </div>
                         </div>
+                    <div class="form-group">
+                        <label for="situacion_actual">Situación Actual:</label>
+                        <select id="situacion_actual" name="situacion_actual" required>
+                            <option value="Estudia">Estudia</option>
+                            <option value="Trabaja">Trabaja</option>
+                            <option value="Estudia y trabaja">Estudia y trabaja</option>
+                            <option value="No estudia ni trabaja">No Estudia ni trabaja</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="con_quien_vives">Con quién vives:</label>
+                        <select id="con_quien_vives" name="con_quien_vives" required>
+                            <option value="Familia">Familia</option>
+                            <option value="Amigos">Amigos</option>
+                            <option value="Pareja">Pareja</option>
+                            <option value="Solo/a">Solo/a</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
                 <div class="form-group" style="grid-column: 1 / -1; margin-top: 10px;">
                     <label style="font-weight: normal;">
                         <input type="checkbox" name="autorizacion_datos" required>
@@ -1132,19 +2814,25 @@ def mostrar_pagina(request: Request):  # Añadir el parámetro request
         }});
 
         function seleccionarVersion(version) {{
-        if (!fueClickEnRegistrar) return;
+            if (!fueClickEnRegistrar) return;
 
-        // Crear campo oculto con la versión seleccionada
-        const inputHidden = document.createElement("input");
-        inputHidden.type = "hidden";
-        inputHidden.name = "version";
-        inputHidden.value = version;
-        form.appendChild(inputHidden);
+            // Crear campo oculto con la versión seleccionada
+            const inputHidden = document.createElement("input");
+            inputHidden.type = "hidden";
+            inputHidden.name = "version";
+            inputHidden.value = version;
+            form.appendChild(inputHidden);
 
-        modal.style.display = "none";
-        fueClickEnRegistrar = false;
-        form.submit();
-    }}
+            modal.style.display = "none";
+            fueClickEnRegistrar = false;
+            // Si versión es Resiliencia, redirigir al cuestionario pasando usuario_id
+            if (version === 'Resiliencia') {{
+                const numId = document.getElementById('numero_identificacion').value;
+                window.location.href = '/cuestionario_resiliencia?usuario_id=' + numId;
+                return;
+            }}
+            form.submit();
+        }}
 
         function toggleEmpresaInput(select) {{
             const otraEmpresaGroup = document.getElementById("otraEmpresaGroup");
@@ -5308,7 +6996,7 @@ def generate_dashboard(valores_respuestas, individual_charts, consolidated_chart
       // Actualizar el contenido del modal según la categoría seleccionada
       document.getElementById('modalChart').src = "/statics/user_{usuario_id}/radar_" + category.toLowerCase() + ".html";
       document.getElementById('modalTitle').textContent = category.toUpperCase();
-      document.getElementById('modalEvaluation').textContent = {json.dumps(promedios)}[category].toFixed(1);
+      document.getElementById('modalEvaluation').textContent = ({json.dumps(promedios)}[category] * 10).toFixed(1);
       document.getElementById('modalDescription').textContent = {json.dumps(interpretaciones)}[category];
       
       // Mostrar interpretación de IA si está disponible
@@ -5317,7 +7005,7 @@ def generate_dashboard(valores_respuestas, individual_charts, consolidated_chart
       
       
       // Recomendaciones basadas en el puntaje
-      const score = {json.dumps(promedios)}[category];
+      const score = {json.dumps(promedios)}[category] * 10;
       let recommendations = "";
       
       if(score < 4) {{
