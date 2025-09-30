@@ -149,18 +149,6 @@ def guardar_usuario(
         conn = get_db_connection()
         cursor = conn.cursor() 
 
-        cursor.execute("""
-            ALTER TABLE RespuestasResil 
-            MODIFY COLUMN Score_Physical_pct DECIMAL(5,2),
-            MODIFY COLUMN Score_Emotional_pct DECIMAL(5,2),
-            MODIFY COLUMN Score_Mental_pct DECIMAL(5,2),
-            MODIFY COLUMN Score_Existential_pct DECIMAL(5,2),
-            MODIFY COLUMN Score_Financial_pct DECIMAL(5,2),
-            MODIFY COLUMN Score_Environmental_pct DECIMAL(5,2),
-            MODIFY COLUMN Score_Social_pct DECIMAL(5,2),
-            MODIFY COLUMN Composite_Score_pct DECIMAL(5,2)
-        """)
-        conn.commit()
 
         # Verificar si el número de identificación ya existe
         cursor.execute("SELECT COUNT(*) FROM usuarios WHERE numero_identificacion = %s", (numero_identificacion,))
@@ -1481,7 +1469,7 @@ def cuestionario_resiliencia():
                     <div class="question-category">Factores de Riesgo</div>
                 </div>
                 <div class="question-body">
-                    <div class="question-text required">¿Has consumido alguna otra sustancia (marihuana, cocaína, etc.) en el último mes?</div>
+                    <div class="question-text required">¿Has consumido alguna otra Sustancias psicoactivas (marihuana, cocaína, etc.) en el último mes?</div>
                     <div class="options-grid">
                         <label class="option-item">
                             <input type="radio" name="pregunta_23" value="0" class="option-input" required>
@@ -1878,6 +1866,803 @@ def guardar_resiliencia(
             cursor.close()
         if conn:
             conn.close()
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin_panel():
+    import os
+    import glob
+    from datetime import datetime
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Ejecutar el query para obtener datos de resiliencia
+    query = """
+    SELECT 
+        u.numero_identificacion,
+        u.rango_edad,
+        u.Sexo,
+        u.barrio,
+        u.grado_escolaridad,
+        u.Situacion_Actual,
+        u.Con_quien_vives,
+        r.*,
+        CASE 
+            WHEN r.Composite_Score_pct <= 2.5 
+                 OR r.P3_Suenio < 2.5
+                 OR r.E2_AlegriaEntusiasmo < 2.5
+                 OR r.E3_EstresPreocupacion < 2.5
+                 OR r.M1_Utilidad_Afrontar < 2.5
+                 OR r.M2_Tristeza < 2.5
+                 OR r.M3_Ansiedad < 2.5
+                 OR r.EX1_Proposito < 2.5
+                 OR r.F3_AhorrosEmergencia < 2.5
+                 OR r.ENV3_Seguridad < 2.5
+                 OR r.S1_ApoyoFamilia < 2.5
+            THEN 'Alto riesgo'
+
+            WHEN (
+                    (r.P1_ActividadFisica <= 2.5) + 
+                    (r.P2_Energia <= 2.5) + 
+                    (r.P3_Suenio <= 2.5) +
+                    (r.E1_SatisfaccionVida <= 2.5) + 
+                    (r.E2_AlegriaEntusiasmo <= 2.5) + 
+                    (r.E3_EstresPreocupacion <= 2.5) +
+                    (r.M1_Utilidad_Afrontar <= 2.5) + 
+                    (r.M2_Tristeza <= 2.5) + 
+                    (r.M3_Ansiedad <= 2.5) +
+                    (r.EX1_Proposito <= 2.5) + 
+                    (r.EX2_MetasSentido <= 2.5) + 
+                    (r.EX3_Direccion_Invertido <= 2.5) +
+                    (r.F1_PreocupacionGastos <= 2.5) + 
+                    (r.F2_ManejoDinero <= 2.5) + 
+                    (r.F3_AhorrosEmergencia <= 2.5) +
+                    (r.ENV1_BarrioSaludable <= 2.5) + 
+                    (r.ENV2_AccesoVerde <= 2.5) + 
+                    (r.ENV3_Seguridad <= 2.5) +
+                    (r.S1_ApoyoFamilia <= 2.5) + 
+                    (r.S2_AmistadesConfianza <= 2.5) + 
+                    (r.S3_ParticipacionComunitaria <= 2.5) +
+                    (r.FR1 <= 2.5) + 
+                    (r.FR2 <= 2.5) + 
+                    (r.FR3 <= 2.5)
+                 ) >= 3
+            THEN 'Medio riesgo'
+            
+            WHEN r.Composite_Score_pct = 4
+            THEN 'Bajo riesgo'
+            
+            ELSE 'Riesgo normal'
+        END AS nivel_riesgo,
+
+        (
+            (r.P3_Suenio < 2.5) +
+            (r.E2_AlegriaEntusiasmo < 2.5) +
+            (r.E3_EstresPreocupacion < 2.5) +
+            (r.M1_Utilidad_Afrontar < 2.5) +
+            (r.M2_Tristeza < 2.5) +
+            (r.M3_Ansiedad < 2.5) +
+            (r.EX1_Proposito < 2.5) +
+            (r.F3_AhorrosEmergencia < 2.5) +
+            (r.ENV3_Seguridad < 2.5) +
+            (r.S1_ApoyoFamilia < 2.5)
+        ) AS respuestas_criticas_bajas,
+        (
+            (r.P1_ActividadFisica <= 2.5) + 
+            (r.P2_Energia <= 2.5) + 
+            (r.P3_Suenio <= 2.5) +
+            (r.E1_SatisfaccionVida <= 2.5) + 
+            (r.E2_AlegriaEntusiasmo <= 2.5) + 
+            (r.E3_EstresPreocupacion <= 2.5) +
+            (r.M1_Utilidad_Afrontar <= 2.5) + 
+            (r.M2_Tristeza <= 2.5) + 
+            (r.M3_Ansiedad <= 2.5) +
+            (r.EX1_Proposito <= 2.5) + 
+            (r.EX2_MetasSentido <= 2.5) + 
+            (r.EX3_Direccion_Invertido <= 2.5) +
+            (r.F1_PreocupacionGastos <= 2.5) + 
+            (r.F2_ManejoDinero <= 2.5) + 
+            (r.F3_AhorrosEmergencia <= 2.5) +
+            (r.ENV1_BarrioSaludable <= 2.5) + 
+            (r.ENV2_AccesoVerde <= 2.5) + 
+            (r.ENV3_Seguridad <= 2.5) +
+            (r.S1_ApoyoFamilia <= 2.5) + 
+            (r.S2_AmistadesConfianza <= 2.5) + 
+            (r.S3_ParticipacionComunitaria <= 2.5) +
+            (r.FR1 <= 2.5) + 
+            (r.FR2 <= 2.5) + 
+            (r.FR3 <= 2.5)
+        ) AS total_respuestas_bajas
+
+    FROM railway.RespuestasResil r
+    INNER JOIN railway.usuarios u ON r.usuario_id = u.numero_identificacion;
+    """
+    
+    cursor.execute(query)
+    resultados = cursor.fetchall()
+    
+    # Obtener nombres de columnas
+    column_names = [desc[0] for desc in cursor.description]
+    
+    # Crear DataFrame
+    df = pd.DataFrame(resultados, columns=column_names)
+    
+    # Estadísticas adicionales desde la base de datos
+    total_usuarios_db = len(df)
+    alto_riesgo = len(df[df['nivel_riesgo'] == 'Alto riesgo'])
+    medio_riesgo = len(df[df['nivel_riesgo'] == 'Medio riesgo'])
+    bajo_riesgo = len(df[df['nivel_riesgo'] == 'Bajo riesgo'])
+    riesgo_normal = len(df[df['nivel_riesgo'] == 'Riesgo normal'])
+    
+    # Calcular porcentajes
+    porcentaje_alto = (alto_riesgo / total_usuarios_db * 100) if total_usuarios_db > 0 else 0
+    porcentaje_medio = (medio_riesgo / total_usuarios_db * 100) if total_usuarios_db > 0 else 0
+    porcentaje_bajo = (bajo_riesgo / total_usuarios_db * 100) if total_usuarios_db > 0 else 0
+    
+    conn.close()
+    
+    # Código existente para archivos
+    statics_path = "statics"
+    pdf_files = glob.glob(f"{statics_path}/analisis_usuario_*.pdf")
+    user_folders = [d for d in os.listdir(statics_path) if os.path.isdir(os.path.join(statics_path, d)) and d.startswith("user_")]
+    
+    total_pdfs = len(pdf_files)
+    total_users = len(user_folders)
+    total_files = len(os.listdir(statics_path))
+    
+    # Archivos recientes (últimos 15)
+    recent_files = []
+    for pdf in pdf_files[:15]:
+        try:
+            stat = os.stat(pdf)
+            recent_files.append({
+                'name': os.path.basename(pdf),
+                'modified': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M'),
+                'user_id': os.path.basename(pdf).replace('analisis_usuario_', '').replace('.pdf', ''),
+                'size': f"{stat.st_size / 1024:.1f} KB"
+            })
+        except:
+            continue
+    
+    recent_files.sort(key=lambda x: x['modified'], reverse=True)
+    
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Panel de Administración - Sistema de Resiliencia</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            :root {{
+                --primary: #3498db;
+                --secondary: #2c3e50;
+                --success: #27ae60;
+                --warning: #f39c12;
+                --danger: #e74c3c;
+                --light: #ecf0f1;
+                --dark: #34495e;
+                --gray: #95a5a6;
+            }}
+            
+            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; color: #333; }}
+            .container {{ max-width: 1400px; margin: 0 auto; }}
+            
+            /* Header */
+            .header {{ background: white; border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--primary); }}
+            .title {{ font-size: 1.8rem; font-weight: 700; color: var(--secondary); display: flex; align-items: center; gap: 15px; }}
+            .title i {{ color: var(--primary); }}
+            .header-actions {{ display: flex; gap: 15px; align-items: center; }}
+            .search {{ display: flex; gap: 10px; }}
+            .search-input {{ padding: 12px 15px; border: 2px solid var(--light); border-radius: 8px; width: 300px; font-size: 0.9rem; transition: all 0.3s; }}
+            .search-input:focus {{ outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1); }}
+            .btn {{ padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; transition: all 0.3s; font-size: 0.9rem; }}
+            .btn-primary {{ background: var(--primary); color: white; }}
+            .btn-primary:hover {{ background: #2980b9; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3); }}
+            .btn-success {{ background: var(--success); color: white; }}
+            .btn-success:hover {{ background: #219653; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3); }}
+            .btn-danger {{ background: var(--danger); color: white; }}
+            .btn-danger:hover {{ background: #c0392b; transform: translateY(-2px); }}
+            
+            /* Stats Grid */
+            .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }}
+            .stat-card {{ background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.3s; border-top: 4px solid; }}
+            .stat-card:hover {{ transform: translateY(-5px); }}
+            .stat-card.files {{ border-top-color: var(--primary); }}
+            .stat-card.users {{ border-top-color: var(--success); }}
+            .stat-card.folders {{ border-top-color: var(--warning); }}
+            .stat-card.database {{ border-top-color: var(--danger); }}
+            .stat-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }}
+            .stat-icon {{ font-size: 2.2rem; opacity: 0.8; }}
+            .stat-content {{ text-align: center; }}
+            .stat-number {{ font-size: 2.5rem; font-weight: 800; margin-bottom: 5px; }}
+            .stat-label {{ font-size: 0.9rem; color: var(--gray); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }}
+            .stat-subtext {{ font-size: 0.8rem; color: var(--gray); margin-top: 8px; }}
+            
+            /* Risk Stats */
+            .risk-stats {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }}
+            .risk-item {{ padding: 8px; border-radius: 6px; color: white; font-size: 0.8rem; font-weight: 600; display: flex; justify-content: space-between; }}
+            .risk-high {{ background: var(--danger); }}
+            .risk-medium {{ background: var(--warning); }}
+            .risk-low {{ background: var(--success); }}
+            .risk-normal {{ background: var(--primary); }}
+            
+            /* Content Layout */
+            .content {{ display: grid; grid-template-columns: 2fr 1fr; gap: 25px; }}
+            .panel {{ background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); height: fit-content; }}
+            .panel-title {{ font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--light); display: flex; align-items: center; gap: 10px; color: var(--secondary); }}
+            .panel-title i {{ color: var(--primary); }}
+            
+            /* File List */
+            .file-list {{ max-height: 500px; overflow-y: auto; }}
+            .file-item {{ display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--light); transition: background 0.2s; }}
+            .file-item:hover {{ background: #f8f9fa; }}
+            .file-item:last-child {{ border-bottom: none; }}
+            .file-info {{ display: flex; align-items: center; gap: 12px; flex: 1; }}
+            .file-icon {{ color: var(--danger); font-size: 1.3rem; }}
+            .file-details {{ flex: 1; }}
+            .file-name {{ font-weight: 600; margin-bottom: 4px; }}
+            .file-meta {{ font-size: 0.8rem; color: var(--gray); display: flex; gap: 15px; }}
+            .file-actions {{ display: flex; gap: 8px; }}
+            .action-btn {{ background: var(--light); color: var(--dark); border: none; width: 36px; height: 36px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }}
+            .action-btn:hover {{ background: var(--primary); color: white; transform: scale(1.05); }}
+            
+            /* Folder List */
+            .folder-item {{ display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--light); border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }}
+            .folder-item:hover {{ border-color: var(--primary); background: #f8f9fa; }}
+            .folder-icon {{ color: var(--warning); font-size: 1.5rem; }}
+            .folder-count {{ background: var(--primary); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }}
+            
+            /* Quick Actions */
+            .quick-actions {{ display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }}
+            .quick-action {{ background: var(--light); border-radius: 8px; padding: 15px; text-align: center; cursor: pointer; transition: all 0.2s; }}
+            .quick-action:hover {{ background: var(--primary); color: white; }}
+            .quick-action i {{ font-size: 1.5rem; margin-bottom: 8px; }}
+            
+            /* Modal */
+            .modal {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; backdrop-filter: blur(5px); }}
+            .modal-content {{ position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 12px; padding: 25px; width: 90%; max-width: 1000px; max-height: 90%; display: flex; flex-direction: column; }}
+            .modal-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--light); }}
+            .modal-title {{ font-size: 1.3rem; font-weight: 700; }}
+            .close-btn {{ background: var(--danger); color: white; border: none; width: 36px; height: 36px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; }}
+            .pdf-viewer {{ width: 100%; height: 600px; border: 1px solid var(--light); border-radius: 8px; flex: 1; }}
+            
+            /* Responsive */
+            @media (max-width: 1200px) {{
+                .content {{ grid-template-columns: 1fr; }}
+            }}
+            @media (max-width: 768px) {{
+                .header {{ flex-direction: column; gap: 15px; align-items: flex-start; }}
+                .header-actions {{ width: 100%; }}
+                .search {{ flex: 1; }}
+                .search-input {{ width: 100%; }}
+                .stats-grid {{ grid-template-columns: 1fr 1fr; }}
+            }}
+            @media (max-width: 576px) {{
+                .stats-grid {{ grid-template-columns: 1fr; }}
+                .quick-actions {{ grid-template-columns: 1fr; }}
+            }}
+            
+            /* Scrollbar */
+            ::-webkit-scrollbar {{ width: 6px; }}
+            ::-webkit-scrollbar-track {{ background: #f1f1f1; border-radius: 10px; }}
+            ::-webkit-scrollbar-thumb {{ background: var(--primary); border-radius: 10px; }}
+            ::-webkit-scrollbar-thumb:hover {{ background: #2980b9; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <div class="title">
+                    <i class="fas fa-shield-alt"></i>
+                    <div>
+                        <div>Panel de Administración</div>
+                        <div style="font-size: 0.9rem; color: var(--gray); font-weight: normal;">Sistema de Evaluación de Resiliencia</div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="search">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Buscar reportes, usuarios...">
+                        <button class="btn btn-primary" onclick="searchFiles()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card files">
+                    <div class="stat-header">
+                        <div class="stat-icon">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{total_pdfs}</div>
+                        <div class="stat-label">Reportes PDF</div>
+                        <div class="stat-subtext">{len(recent_files)} nuevos</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card users">
+                    <div class="stat-header">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{total_users}</div>
+                        <div class="stat-label">Usuarios Activos</div>
+                        <div class="stat-subtext">{len(user_folders)} carpetas</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card folders">
+                    <div class="stat-header">
+                        <div class="stat-icon">
+                            <i class="fas fa-folder"></i>
+                        </div>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{total_files}</div>
+                        <div class="stat-label">Archivos Totales</div>
+                        <div class="stat-subtext">En sistema de archivos</div>
+                    </div>
+                </div>
+                
+               <div class="stat-card database">
+                <div class="stat-header">
+                    <div class="stat-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <!-- AGREGAR ESTE BOTÓN AQUÍ -->
+                    <a href="/admin/export-excel" class="btn btn-success" style="padding: 8px 12px; font-size: 0.8rem;">
+                        <i class="fas fa-file-excel"></i> Excel
+                    </a>
+                </div>
+                <div class="stat-content">
+                        <div class="stat-number">{total_usuarios_db}</div>
+                        <div class="stat-label">Registros en BD</div>
+                        <div class="risk-stats">
+                            <div class="risk-item risk-high">{alto_riesgo} <span>{porcentaje_alto:.1f}%</span></div>
+                            <div class="risk-item risk-medium">{medio_riesgo} <span>{porcentaje_medio:.1f}%</span></div>
+                            <div class="risk-item risk-low">{bajo_riesgo} <span>{porcentaje_bajo:.1f}%</span></div>
+                            <div class="risk-item risk-normal">{riesgo_normal} <span>{(100 - porcentaje_alto - porcentaje_medio - porcentaje_bajo):.1f}%</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="content">
+                <!-- Left Column -->
+                <div>
+                    <!-- Recent Reports -->
+                    <div class="panel">
+                        <div class="panel-title">
+                            <i class="fas fa-file-pdf"></i> Reportes Recientes
+                            <span style="margin-left: auto; font-size: 0.9rem; color: var(--gray); font-weight: normal;">{len(recent_files)} archivos</span>
+                        </div>
+                        <div class="file-list" id="recentFiles">
+                            {"".join([f'''
+                            <div class="file-item">
+                                <div class="file-info">
+                                    <i class="fas fa-file-pdf file-icon"></i>
+                                    <div class="file-details">
+                                        <div class="file-name">{file['name']}</div>
+                                        <div class="file-meta">
+                                            <span><i class="fas fa-user"></i> {file['user_id']}</span>
+                                            <span><i class="fas fa-calendar"></i> {file['modified']}</span>
+                                            <span><i class="fas fa-hdd"></i> {file['size']}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="file-actions">
+                                    <button class="action-btn" onclick="viewPDF('{file['name']}')" title="Ver PDF">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="action-btn" onclick="downloadPDF('{file['name']}')" title="Descargar">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            ''' for file in recent_files])}
+                            {"<div style='text-align: center; padding: 20px; color: var(--gray);'><i class='fas fa-inbox'></i> No hay reportes recientes</div>" if not recent_files else ""}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div>
+                    <!-- User Folders -->
+                    <div class="panel">
+                        <div class="panel-title">
+                            <i class="fas fa-folder"></i> Carpetas de Usuarios
+                            <span style="margin-left: auto; font-size: 0.9rem; color: var(--gray); font-weight: normal;">{len(user_folders)} carpetas</span>
+                        </div>
+                        <div class="file-list" id="userFolders">
+                            {"".join([f'''
+                            <div class="folder-item" onclick="openFolder('{folder}')">
+                                <div class="file-info">
+                                    <i class="fas fa-folder folder-icon"></i>
+                                    <div class="file-details">
+                                        <div class="file-name">{folder}</div>
+                                        <div class="file-meta">
+                                            ID: {folder.replace('user_', '')}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="folder-count">
+                                    {len(os.listdir(os.path.join(statics_path, folder))) if os.path.exists(os.path.join(statics_path, folder)) else 0}
+                                </div>
+                            </div>
+                            ''' for folder in sorted(user_folders)[:10]])}
+                            {"<div style='text-align: center; padding: 20px; color: var(--gray);'><i class='fas fa-folder-open'></i> No hay carpetas de usuarios</div>" if not user_folders else ""}
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="panel">
+                        <div class="panel-title">
+                            <i class="fas fa-bolt"></i> Acciones Rápidas
+                        </div>
+                        <div class="quick-actions">
+                            <div class="quick-action" onclick="location.href='/admin/export-excel'">
+                                <i class="fas fa-file-excel"></i>
+                                <div>Exportar Datos</div>
+                            </div>
+                            <div class="quick-action" onclick="refreshData()">
+                                <i class="fas fa-sync-alt"></i>
+                                <div>Actualizar</div>
+                            </div>
+                            <div class="quick-action" onclick="showAllReports()">
+                                <i class="fas fa-list"></i>
+                                <div>Ver Todos</div>
+                            </div>
+                            <div class="quick-action" onclick="clearSearch()">
+                                <i class="fas fa-eraser"></i>
+                                <div>Limpiar</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PDF Modal -->
+        <div id="pdfModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="modalTitle">Visualizar PDF</h3>
+                    <button class="close-btn" onclick="closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <iframe id="pdfViewer" class="pdf-viewer" src=""></iframe>
+            </div>
+        </div>
+
+        <script>
+            function searchFiles() {{
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                const fileItems = document.querySelectorAll('.file-item');
+                const folderItems = document.querySelectorAll('.folder-item');
+                
+                fileItems.forEach(item => {{
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+                }});
+                
+                folderItems.forEach(item => {{
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+                }});
+            }}
+
+            function viewPDF(filename) {{
+                document.getElementById('modalTitle').textContent = `Visualizar: ${{filename}}`;
+                document.getElementById('pdfViewer').src = `/statics/${{filename}}`;
+                document.getElementById('pdfModal').style.display = 'block';
+            }}
+
+            function downloadPDF(filename) {{
+                const link = document.createElement('a');
+                link.href = `/statics/${{filename}}`;
+                link.download = filename;
+                link.click();
+            }}
+
+            function openFolder(folderName) {{
+                window.location.href = `/admin/folder/${{folderName}}`;
+            }}
+
+            function refreshData() {{
+                window.location.reload();
+            }}
+
+            function showAllReports() {{
+                window.location.href = '/admin/reports';
+            }}
+
+            function clearSearch() {{
+                document.getElementById('searchInput').value = '';
+                searchFiles();
+            }}
+
+            function closeModal() {{
+                document.getElementById('pdfModal').style.display = 'none';
+                document.getElementById('pdfViewer').src = '';
+            }}
+
+            // Event listeners
+            window.onclick = function(event) {{
+                const modal = document.getElementById('pdfModal');
+                if (event.target === modal) closeModal();
+            }}
+
+            document.getElementById('searchInput').addEventListener('input', searchFiles);
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {{
+                if (e.key === 'Enter') searchFiles();
+            }});
+
+            // Mostrar notificación de carga
+            window.addEventListener('load', function() {{
+                console.log('Panel de administración cargado correctamente');
+            }});
+        </script>
+    </body>
+    </html>
+    """
+@app.get("/admin/export-excel")
+def export_excel():
+    import io
+    from datetime import datetime
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Ejecutar el mismo query para obtener datos
+    query = """
+    SELECT 
+        u.numero_identificacion,
+        u.rango_edad,
+        u.Sexo,
+        u.barrio,
+        u.grado_escolaridad,
+        u.Situacion_Actual,
+        u.Con_quien_vives,
+        r.*,
+        CASE 
+            WHEN r.Composite_Score_pct <= 2.5 
+                 OR r.P3_Suenio < 2.5
+                 OR r.E2_AlegriaEntusiasmo < 2.5
+                 OR r.E3_EstresPreocupacion < 2.5
+                 OR r.M1_Utilidad_Afrontar < 2.5
+                 OR r.M2_Tristeza < 2.5
+                 OR r.M3_Ansiedad < 2.5
+                 OR r.EX1_Proposito < 2.5
+                 OR r.F3_AhorrosEmergencia < 2.5
+                 OR r.ENV3_Seguridad < 2.5
+                 OR r.S1_ApoyoFamilia < 2.5
+            THEN 'Alto riesgo'
+
+            WHEN (
+                    (r.P1_ActividadFisica <= 2.5) + 
+                    (r.P2_Energia <= 2.5) + 
+                    (r.P3_Suenio <= 2.5) +
+                    (r.E1_SatisfaccionVida <= 2.5) + 
+                    (r.E2_AlegriaEntusiasmo <= 2.5) + 
+                    (r.E3_EstresPreocupacion <= 2.5) +
+                    (r.M1_Utilidad_Afrontar <= 2.5) + 
+                    (r.M2_Tristeza <= 2.5) + 
+                    (r.M3_Ansiedad <= 2.5) +
+                    (r.EX1_Proposito <= 2.5) + 
+                    (r.EX2_MetasSentido <= 2.5) + 
+                    (r.EX3_Direccion_Invertido <= 2.5) +
+                    (r.F1_PreocupacionGastos <= 2.5) + 
+                    (r.F2_ManejoDinero <= 2.5) + 
+                    (r.F3_AhorrosEmergencia <= 2.5) +
+                    (r.ENV1_BarrioSaludable <= 2.5) + 
+                    (r.ENV2_AccesoVerde <= 2.5) + 
+                    (r.ENV3_Seguridad <= 2.5) +
+                    (r.S1_ApoyoFamilia <= 2.5) + 
+                    (r.S2_AmistadesConfianza <= 2.5) + 
+                    (r.S3_ParticipacionComunitaria <= 2.5) +
+                    (r.FR1 <= 2.5) + 
+                    (r.FR2 <= 2.5) + 
+                    (r.FR3 <= 2.5)
+                 ) >= 3
+            THEN 'Medio riesgo'
+            
+            WHEN r.Composite_Score_pct = 4
+            THEN 'Bajo riesgo'
+            
+            ELSE 'Riesgo normal'
+        END AS nivel_riesgo,
+
+        (
+            (r.P3_Suenio < 2.5) +
+            (r.E2_AlegriaEntusiasmo < 2.5) +
+            (r.E3_EstresPreocupacion < 2.5) +
+            (r.M1_Utilidad_Afrontar < 2.5) +
+            (r.M2_Tristeza < 2.5) +
+            (r.M3_Ansiedad < 2.5) +
+            (r.EX1_Proposito < 2.5) +
+            (r.F3_AhorrosEmergencia < 2.5) +
+            (r.ENV3_Seguridad < 2.5) +
+            (r.S1_ApoyoFamilia < 2.5)
+        ) AS respuestas_criticas_bajas,
+        (
+            (r.P1_ActividadFisica <= 2.5) + 
+            (r.P2_Energia <= 2.5) + 
+            (r.P3_Suenio <= 2.5) +
+            (r.E1_SatisfaccionVida <= 2.5) + 
+            (r.E2_AlegriaEntusiasmo <= 2.5) + 
+            (r.E3_EstresPreocupacion <= 2.5) +
+            (r.M1_Utilidad_Afrontar <= 2.5) + 
+            (r.M2_Tristeza <= 2.5) + 
+            (r.M3_Ansiedad <= 2.5) +
+            (r.EX1_Proposito <= 2.5) + 
+            (r.EX2_MetasSentido <= 2.5) + 
+            (r.EX3_Direccion_Invertido <= 2.5) +
+            (r.F1_PreocupacionGastos <= 2.5) + 
+            (r.F2_ManejoDinero <= 2.5) + 
+            (r.F3_AhorrosEmergencia <= 2.5) +
+            (r.ENV1_BarrioSaludable <= 2.5) + 
+            (r.ENV2_AccesoVerde <= 2.5) + 
+            (r.ENV3_Seguridad <= 2.5) +
+            (r.S1_ApoyoFamilia <= 2.5) + 
+            (r.S2_AmistadesConfianza <= 2.5) + 
+            (r.S3_ParticipacionComunitaria <= 2.5) +
+            (r.FR1 <= 2.5) + 
+            (r.FR2 <= 2.5) + 
+            (r.FR3 <= 2.5)
+        ) AS total_respuestas_bajas
+
+    FROM railway.RespuestasResil r
+    INNER JOIN railway.usuarios u ON r.usuario_id = u.numero_identificacion;
+    """
+    
+    cursor.execute(query)
+    resultados = cursor.fetchall()
+    
+    # Obtener nombres de columnas
+    column_names = [desc[0] for desc in cursor.description]
+    
+    # Crear DataFrame
+    df = pd.DataFrame(resultados, columns=column_names)
+    conn.close()
+    
+    # Crear archivo Excel en memoria
+    output = io.BytesIO()
+    
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        # Hoja principal con todos los datos
+        df.to_excel(writer, sheet_name='Datos_Resiliencia', index=False)
+        
+        # Hoja con estadísticas resumidas
+        stats_data = {
+            'Métrica': [
+                'Total de Registros',
+                'Alto Riesgo', 
+                'Medio Riesgo',
+                'Bajo Riesgo',
+                'Riesgo Normal'
+            ],
+            'Cantidad': [
+                len(df),
+                len(df[df['nivel_riesgo'] == 'Alto riesgo']),
+                len(df[df['nivel_riesgo'] == 'Medio riesgo']),
+                len(df[df['nivel_riesgo'] == 'Bajo riesgo']),
+                len(df[df['nivel_riesgo'] == 'Riesgo normal'])
+            ],
+            'Porcentaje': [
+                '100%',
+                f"{(len(df[df['nivel_riesgo'] == 'Alto riesgo']) / len(df) * 100):.1f}%",
+                f"{(len(df[df['nivel_riesgo'] == 'Medio riesgo']) / len(df) * 100):.1f}%", 
+                f"{(len(df[df['nivel_riesgo'] == 'Bajo riesgo']) / len(df) * 100):.1f}%",
+                f"{(len(df[df['nivel_riesgo'] == 'Riesgo normal']) / len(df) * 100):.1f}%"
+            ]
+        }
+        
+        stats_df = pd.DataFrame(stats_data)
+        stats_df.to_excel(writer, sheet_name='Estadisticas', index=False)
+    
+    output.seek(0)
+    
+    # Generar nombre del archivo con fecha
+    fecha_actual = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    filename = f"resiliencia_data_{fecha_actual}.xlsx"
+    
+    # Retornar el archivo Excel como respuesta
+    return Response(
+        content=output.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+@app.get("/admin/folder/{folder_name}", response_class=HTMLResponse)
+def admin_folder_detail(folder_name: str):
+    import os
+    
+    statics_path = "statics"
+    folder_path = os.path.join(statics_path, folder_name)
+    
+    if not os.path.exists(folder_path):
+        return HTMLResponse("<h1>Carpeta no encontrada</h1>", status_code=404)
+    
+    files = os.listdir(folder_path)
+    user_id = folder_name.replace('user_', '')
+    
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Carpeta de Usuario {user_id}</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+            body {{ font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }}
+            .container {{ max-width: 1200px; margin: 0 auto; }}
+            .header {{ background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+            .back-btn {{ background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-bottom: 20px; }}
+            .files-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }}
+            .file-card {{ background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+            .file-icon {{ font-size: 2rem; margin-bottom: 10px; color: #e74c3c; }}
+            .file-name {{ font-weight: 500; margin-bottom: 5px; }}
+            .file-actions {{ display: flex; gap: 10px; margin-top: 15px; }}
+            .btn {{ background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }}
+            .btn:hover {{ background: #2980b9; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <button class="back-btn" onclick="window.location.href='/admin'">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </button>
+            
+            <div class="header">
+                <h1><i class="fas fa-folder"></i> Carpeta: {folder_name}</h1>
+                <p>Usuario ID: {user_id}</p>
+                <p>Total de archivos: {len(files)}</p>
+            </div>
+            
+            <div class="files-grid">
+                {"".join([f'''
+                <div class="file-card">
+                    <div class="file-icon">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div class="file-name">{file}</div>
+                    <div class="file-actions">
+                        <button class="btn" onclick="window.open('/statics/{folder_name}/{file}', '_blank')">
+                            <i class="fas fa-eye"></i> Ver
+                        </button>
+                        <button class="btn" onclick="downloadFile('{folder_name}/{file}')">
+                            <i class="fas fa-download"></i> Descargar
+                        </button>
+                    </div>
+                </div>
+                ''' for file in files if file.endswith('.pdf')])}
+            </div>
+        </div>
+        
+        <script>
+            function downloadFile(filepath) {{
+                const link = document.createElement('a');
+                link.href = `/statics/${{filepath}}`;
+                link.download = filepath.split('/').pop();
+                link.click();
+            }}
+        </script>
+    </body>
+    </html>
+    """
 
 @app.get("/login", response_class=HTMLResponse)
 def login_form():
