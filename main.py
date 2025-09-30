@@ -149,7 +149,6 @@ def guardar_usuario(
         conn = get_db_connection()
         cursor = conn.cursor() 
 
-
         # Verificar si el número de identificación ya existe
         cursor.execute("SELECT COUNT(*) FROM usuarios WHERE numero_identificacion = %s", (numero_identificacion,))
         (existe,) = cursor.fetchone()
@@ -207,15 +206,25 @@ def guardar_usuario(
                 """
                 return HTMLResponse(content=html_content, status_code=400)
 
-            # Insertar usuario si no existe y no seleccionó Chat
-            cursor.execute(
-                """
-                INSERT INTO usuarios (nombre, apellidos, tipo_documento, numero_identificacion, correo,telefono,eps, sexo, Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad,barrio, Profesion, Empresa, situacion_actual, con_quien_vives)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,%s,%s,%s)
-                """,
-                (nombre, apellidos, tipo_documento, numero_identificacion, correo, telefono, eps, sexo, Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad, barrio, Profesion, empresa_final, situacion_actual, con_quien_vives)
-            )
-            conn.commit()
+            if version == "Resiliencia":
+                cursor.execute(
+                    """
+                    INSERT INTO Usuarios_Resiliencia (nombre, apellidos, tipo_documento, numero_identificacion, correo, telefono, eps, sexo, Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad, barrio, Profesion, Empresa, situacion_actual, con_quien_vives)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (nombre, apellidos, tipo_documento, numero_identificacion, correo, telefono, eps, sexo, Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad, barrio, Profesion, empresa_final, situacion_actual, con_quien_vives)
+                )
+                conn.commit()
+            else:
+                # Insertar usuario si no existe y no seleccionó Chat
+                cursor.execute(
+                    """
+                    INSERT INTO usuarios (nombre, apellidos, tipo_documento, numero_identificacion, correo, telefono, eps, sexo, Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad, barrio, Profesion, Empresa, situacion_actual, con_quien_vives)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (nombre, apellidos, tipo_documento, numero_identificacion, correo, telefono, eps, sexo, Peso, Altura, rango_edad, grado_escolaridad, antiguedad, ciudad, barrio, Profesion, empresa_final, situacion_actual, con_quien_vives)
+                )
+                conn.commit()
 
             # Redirección según versión
             if version == "Esencial":
