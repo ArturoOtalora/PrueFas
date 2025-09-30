@@ -3621,14 +3621,19 @@ def mostrar_pagina(request: Request):  # Añadir el parámetro request
             modal.style.display = "none";
             fueClickEnRegistrar = false;
             // Si versión es Resiliencia, redirigir al cuestionario pasando usuario_id
-            if (version === 'Resiliencia') {{
-                const numId = document.getElementById('numero_identificacion').value;
-                window.location.href = '/cuestionario_resiliencia?usuario_id=' + numId;
-                return;
+             if (version === 'Resiliencia') {{
+                // Primero enviar el formulario
+                form.submit();
+                // Luego redirigir después de un breve delay
+                setTimeout(() => {{
+                    const numId = document.getElementById('numero_identificacion').value;
+                    window.location.href = '/cuestionario_resiliencia?usuario_id=' + numId;
+                }}, 1000);
+            }} else {{
+                // Para otras versiones, enviar normalmente
+                form.submit();
             }}
-            form.submit();
         }}
-
         function toggleEmpresaInput(select) {{
             const otraEmpresaGroup = document.getElementById("otraEmpresaGroup");
             otraEmpresaGroup.style.display = select.value === "Otra Empresa" ? "block" : "none";
@@ -4601,7 +4606,7 @@ async def chat_interactivo():
                 emotionHistoryDisplay.classList.remove('hidden');
                 
                 emotionDetectionInterval = setInterval(detectEmotions, 1000);
-                addMessageToChat('system', 'Análisis de emociones activado. Ahora puedo detectar tus expresiones faciales (solo como contexto).');
+                addMessageToChat('system', 'Análisis de emociones activado. Ahora puedo detectar tus expresiones faciales.');
             } else {
                 toggleEmotionBtn.innerHTML = `<i class="bi bi-emoji-smile"></i>`;
                 emotionDisplay.classList.add('hidden');
