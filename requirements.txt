@@ -13,3 +13,5 @@ openai
 tiktoken
 dotenv
 Flask
+openpyxl
+pandas

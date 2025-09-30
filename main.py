@@ -2226,7 +2226,7 @@ def admin_panel():
                 </div>
                 <div class="stat-content">
                         <div class="stat-number">{total_usuarios_db}</div>
-                        <div class="stat-label">Registros en BD</div>
+                        <div class="stat-label">Reporte Resiliencia</div>
                         <div class="risk-stats">
                             <div class="risk-item risk-high">{alto_riesgo} <span>{porcentaje_alto:.1f}%</span></div>
                             <div class="risk-item risk-medium">{medio_riesgo} <span>{porcentaje_medio:.1f}%</span></div>
