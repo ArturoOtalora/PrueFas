@@ -1987,7 +1987,7 @@ def admin_panel():
         ) AS total_respuestas_bajas
 
     FROM railway.RespuestasResil r
-    INNER JOIN railway.usuarios u ON r.usuario_id = u.numero_identificacion;
+    INNER JOIN railway.Usuarios_Resiliencia u ON r.usuario_id = u.numero_identificacion;
     """
     
     cursor.execute(query)
@@ -2536,7 +2536,7 @@ def export_excel():
         ) AS total_respuestas_bajas
 
     FROM railway.RespuestasResil r
-    INNER JOIN railway.usuarios u ON r.usuario_id = u.numero_identificacion;
+    INNER JOIN railway.Usuarios_Resiliencia u ON r.usuario_id = u.numero_identificacion;
     """
     
     cursor.execute(query)
