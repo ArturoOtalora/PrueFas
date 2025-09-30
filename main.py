@@ -3761,16 +3761,49 @@ async def chat_with_gpt(request: Request):
         user_messages = data.get("messages", [])
         emotion = data.get("emotion", None)
 
-        if len(user_messages) >= 30:  # 15 interacciones * 2 (user + assistant)
+        if len(user_messages) >= 30:
             raise HTTPException(
                 status_code=400,
                 detail="Has alcanzado el límite máximo de 15 interacciones."
             )
+
+        # Verificar si el último mensaje es del bot (esperando respuesta)
+        last_message_is_bot = user_messages and user_messages[-1]["role"] == "assistant"
+        
+        # Si el último mensaje es del bot y el usuario no ha respondido, bloquear nuevas solicitudes
+        # PERO permitir si solo se está enviando emoción sin contenido de mensaje
+        if last_message_is_bot:
+            # Buscar el último mensaje del usuario
+            user_has_responded = False
+            for msg in reversed(user_messages):
+                if msg["role"] == "user":
+                    user_has_responded = True
+                    break
+                elif msg["role"] == "assistant":
+                    break
+            
+            if not user_has_responded:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Por favor, responde a mi última pregunta antes de continuar."
+                )
+
         # Construir mensajes
         messages = [
             {"role": "system", "content": get_system_prompt(get_emotion_context(emotion))},
             *user_messages
         ]
+
+        # Añadir instrucción para hacer una pregunta a la vez solo si hay conversación
+        if len(user_messages) > 0 and not last_message_is_bot:
+            messages.append({
+                "role": "system", 
+                "content": """IMPORTANTE: 
+                - Haz solo UNA pregunta a la vez y espera la respuesta del usuario antes de continuar.
+                - No hagas múltiples preguntas seguidas.
+                - Si el usuario no responde directamente a tu pregunta, guíalo suavemente de vuelta al tema.
+                - Las emociones detectadas son solo para contexto, no las menciones directamente a menos que sea relevante."""
+            })
 
         # Ajustar historial
         messages = trim_messages(
@@ -3796,7 +3829,7 @@ async def chat_with_gpt(request: Request):
         })
 
     except Exception as e:
-        print(f"Error en chat-api: {str(e)}")  # Log del error
+        print(f"Error en chat-api: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error al procesar tu solicitud: {str(e)}"
