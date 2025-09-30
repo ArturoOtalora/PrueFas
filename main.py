@@ -2814,17 +2814,27 @@ def login(username: str = Form(...), password: str = Form(...)):
         "corevital": "Corevital",
         "advancevital": "AdvanceVital",
         "premiumvital": "premiumVital",
-        "participante": "Participante"
+        "participante": "Participante",
+        "admin": "Admin"  # Agregado el usuario Admin
     }
     clave = "Vital2025."
     
     user_key = username.lower()  # normalizamos para comparar
     
     if user_key in usuarios_validos and password == clave:
+        # Obtener el tipo de usuario con las mayúsculas/minúsculas correctas
+        user_type = usuarios_validos[user_key]
+        
+        # Determinar la URL de redirección según el tipo de usuario
+        if user_type.lower() == "admin":
+            redirect_url = "/admin"
+        else:
+            redirect_url = "/mostrar_pagina1"
+        
         # Crear respuesta de redirección
-        resp = RedirectResponse(url="/mostrar_pagina1", status_code=status.HTTP_302_FOUND)
+        resp = RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
         # Establecer cookie con el valor exacto (con mayúsculas/minúsculas correctas)
-        resp.set_cookie(key="user_type", value=usuarios_validos[user_key], httponly=True)
+        resp.set_cookie(key="user_type", value=user_type, httponly=True)
         return resp
     else:
         return HTMLResponse(
