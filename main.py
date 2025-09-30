@@ -148,10 +148,14 @@ def guardar_usuario(
 
         conn = get_db_connection()
         cursor = conn.cursor() 
+        
+        if version == "Resiliencia":
+          cursor.execute("SELECT COUNT(*) FROM Usuarios_Resiliencia WHERE numero_identificacion = %s", (numero_identificacion,))
+          (existe,) = cursor.fetchone()
 
-        # Verificar si el número de identificación ya existe
-        cursor.execute("SELECT COUNT(*) FROM usuarios WHERE numero_identificacion = %s", (numero_identificacion,))
-        (existe,) = cursor.fetchone()
+        else:
+         cursor.execute("SELECT COUNT(*) FROM usuarios WHERE numero_identificacion = %s", (numero_identificacion,))
+         (existe,) = cursor.fetchone()
         
         if existe:
             # ✅ Ya registrado
