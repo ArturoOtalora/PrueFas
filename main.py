@@ -4172,7 +4172,7 @@ async def chat_interactivo():
     </style>
 </head>
 <body>
-    <div class="main-container">
+   <div class="main-container">
         <h4 class="mb-4">CimaBot - Videochat con Chat Integrado</h4>
         
         <!-- Alerta para permisos -->
@@ -4265,10 +4265,16 @@ async def chat_interactivo():
         let isSpeechRecognitionOn = false;
         let speechRecognizer = null;
         let finalTranscript = '';
-        let avatarState = 'idle'; // Estados: idle, listening, speaking, processing
+        let avatarState = 'idle';
         let avatarAnimationInterval = null;
         let interactionCount = 0;
         const MAX_INTERACTIONS = 15;
+        
+        // NUEVAS VARIABLES PARA CONTROL DE CONVERSACIÓN
+        let isWaitingForUserResponse = false;
+        let lastBotQuestion = "";
+        let responseReminderInterval = null;
+        let lastUserActivityTime = Date.now();
         
         // Traducción de emociones
         const emociones_es = {
@@ -4307,7 +4313,6 @@ async def chat_interactivo():
         function updateInteractionCounter() {
             interactionCounter.textContent = `Interacciones: ${interactionCount}/${MAX_INTERACTIONS}`;
             
-            // Cambiar color cuando se acerca al límite
             if (interactionCount >= MAX_INTERACTIONS - 3) {
                 interactionCounter.style.backgroundColor = 'rgba(255, 193, 7, 0.8)';
             }
@@ -4320,17 +4325,19 @@ async def chat_interactivo():
         // Verificar si se alcanzó el límite de interacciones
         function checkInteractionLimit() {
             if (interactionCount >= MAX_INTERACTIONS) {
-                // Deshabilitar el chat
                 messageInput.disabled = true;
                 sendButton.disabled = true;
                 chatContainer.classList.add('disabled-chat');
                 
-                // Desactivar reconocimiento de voz si está activo
                 if (isSpeechRecognitionOn) {
                     toggleSpeechRecognition();
                 }
                 
-                // Mostrar mensaje de límite alcanzado
+                // Detener recordatorios
+                if (responseReminderInterval) {
+                    clearInterval(responseReminderInterval);
+                }
+                
                 const limitMessage = document.createElement('div');
                 limitMessage.className = 'limit-reached';
                 limitMessage.innerHTML = `
@@ -4351,7 +4358,6 @@ async def chat_interactivo():
                 
             avatarState = state;
             
-            // Remover todas las clases de animación primero
             cimaBotAvatar.classList.remove(
                 'avatar-breathing', 
                 'avatar-listening', 
@@ -4360,53 +4366,107 @@ async def chat_interactivo():
                 'avatar-idle'
             );
             
-            // Aplicar las animaciones correspondientes al nuevo estado
             switch(state) {
                 case 'idle':
-                    // Animación de respiración + parpadeo + movimiento suave
                     setTimeout(() => {
                         cimaBotAvatar.classList.add('avatar-breathing', 'avatar-blinking', 'avatar-idle');
                     }, 100);
                     break;
-                    
                 case 'listening':
-                    // Animación de escucha (movimiento vertical)
                     setTimeout(() => {
                         cimaBotAvatar.classList.add('avatar-listening');
                     }, 100);
                     break;
-                    
                 case 'speaking':
-                    // Animación de habla (pulsación más pronunciada)
                     setTimeout(() => {
                         cimaBotAvatar.classList.add('avatar-speaking');
                     }, 100);
                     break;
-                    
                 case 'processing':
-                    // Similar a escuchar pero con respiración
                     setTimeout(() => {
                         cimaBotAvatar.classList.add('avatar-listening', 'avatar-breathing');
                     }, 100);
                     break;
+                case 'waiting':
+                    // Estado especial cuando espera respuesta del usuario
+                    setTimeout(() => {
+                        cimaBotAvatar.classList.add('avatar-breathing', 'avatar-blinking');
+                    }, 100);
+                    break;
+            }
+        }
+        
+        // Mostrar indicador de que el bot está esperando respuesta
+        function showWaitingIndicator() {
+            // Remover indicadores anteriores
+            const existingIndicator = document.getElementById('waitingForResponse');
+            if (existingIndicator) {
+                existingIndicator.remove();
             }
             
-            console.log("Avatar state changed to:", state);
+            const waitingDiv = document.createElement('div');
+            waitingDiv.id = 'waitingForResponse';
+            waitingDiv.className = 'waiting-indicator';
+            waitingDiv.innerHTML = `
+                <i class="bi bi-clock"></i> 
+                Esperando tu respuesta... Puedes escribir en el chat o hablar con el micrófono.
+            `;
+            chatBody.appendChild(waitingDiv);
+            chatBody.scrollTop = chatBody.scrollHeight;
         }
-                
+        
+        // Remover indicador de espera
+        function hideWaitingIndicator() {
+            const waitingIndicator = document.getElementById('waitingForResponse');
+            if (waitingIndicator) {
+                waitingIndicator.remove();
+            }
+        }
+        
+        // Sistema de recordatorios
+        function setupResponseReminder() {
+            if (responseReminderInterval) {
+                clearInterval(responseReminderInterval);
+            }
+            
+            responseReminderInterval = setInterval(() => {
+                if (isWaitingForUserResponse && !checkInteractionLimit()) {
+                    const timeSinceLastActivity = Date.now() - lastUserActivityTime;
+                    // Si han pasado más de 45 segundos sin respuesta
+                    if (timeSinceLastActivity > 45000) {
+                        const reminderMessages = [
+                            "¿Te gustaría responder a mi pregunta? Puedes escribirla o decírmela por voz.",
+                            "¿Hay algo en lo que pueda ayudarte? Estoy aquí para conversar contigo.",
+                            "¿Quieres que hablemos de algo específico? Puedes responder cuando quieras."
+                        ];
+                        
+                        const reminder = reminderMessages[Math.floor(Math.random() * reminderMessages.length)];
+                        addMessageToChat('assistant', reminder);
+                        chatHistory.push({role: 'assistant', content: reminder});
+                        
+                        // Actualizar el tiempo de actividad para no spammear
+                        lastUserActivityTime = Date.now();
+                    }
+                }
+            }, 30000); // Revisar cada 30 segundos
+        }
+        
+        // Actualizar tiempo de actividad del usuario
+        function updateUserActivity() {
+            lastUserActivityTime = Date.now();
+        }
+        
         // Animación aleatoria para mantener vivo el avatar
         function startRandomAvatarAnimations() {
             if (avatarAnimationInterval) clearInterval(avatarAnimationInterval);
             
             avatarAnimationInterval = setInterval(() => {
-                if (avatarState === 'idle') {
-                    // Pequeñas animaciones aleatorias mientras está inactivo
+                if (avatarState === 'idle' || avatarState === 'waiting') {
                     const random = Math.random();
                     if (random < 0.3) {
-                        // Parpadeo extra
                         cimaBotAvatar.style.animation = 'blinking 4s infinite ease-in-out';
                         setTimeout(() => {
-                            if (avatarState === 'idle') {
+                            if (avatarState === 'idle' || avatarState === 'waiting') {
                                 cimaBotAvatar.style.animation = 'breathing 4s infinite ease-in-out, blinking 4s infinite ease-in-out, idleMovement 8s infinite ease-in-out';
                             }
                         }, 200);
@@ -4415,22 +4475,19 @@ async def chat_interactivo():
             }, 5000);
         }
         
-        // Cargar modelos de face-api.js desde CDN alternativo
+        // Cargar modelos de face-api.js
         async function loadModels() {
             try {
                 emotionProgress.classList.remove('hidden');
                 emotionProgress.textContent = "Cargando modelos: 0%";
                 
-                // Configurar la ruta base para los modelos (usando un CDN público)
                 faceapi.env.monkeyPatch({
                     createCanvasElement: () => document.createElement('canvas'),
                     createImageElement: () => document.createElement('img')
                 });
                 
-                // URLs de los modelos desde un CDN público
                 const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
                 
-                // Cargar modelos con progreso
                 const modelsToLoad = [
                     faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
                     faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
@@ -4461,7 +4518,6 @@ async def chat_interactivo():
                     'No se pudieron cargar los modelos de análisis de emociones. ' +
                     'La función de reconocimiento facial no estará disponible.');
                 
-                // Desactivar el botón de emociones
                 toggleEmotionBtn.disabled = true;
                 toggleEmotionBtn.title = "Funcionalidad no disponible";
             }
@@ -4473,8 +4529,8 @@ async def chat_interactivo():
             
             try {
                 const options = new faceapi.TinyFaceDetectorOptions({
-                    inputSize: 512,  // Tamaño mayor para mejor precisión
-                    scoreThreshold: 0.5  // Umbral de confianza
+                    inputSize: 512,
+                    scoreThreshold: 0.5
                 });
                 
                 const detections = await faceapi.detectAllFaces(
@@ -4491,11 +4547,9 @@ async def chat_interactivo():
                     const confidence = expressions[dominantEmotion];
                     const emotionText = emociones_es[dominantEmotion] || dominantEmotion;
                     
-                    // Mostrar emoción con porcentaje de confianza
                     emotionDisplay.textContent = `Emoción: ${emotionText} (${Math.round(confidence * 100)}%)`;
                     emotionDisplay.classList.remove('hidden');
                     
-                    // Guardar en historial (últimas 5 emociones)
                     emotionHistory.push({
                         emotion: emotionText,
                         confidence: confidence,
@@ -4506,7 +4560,6 @@ async def chat_interactivo():
                         emotionHistory.shift();
                     }
                     
-                    // Mostrar historial formateado
                     const historyText = emotionHistory.map(e => 
                         `${e.emotion} (${Math.round(e.confidence * 100)}%)`
                     ).join(' → ');
@@ -4514,55 +4567,16 @@ async def chat_interactivo():
                     emotionHistoryDisplay.textContent = `Historial: ${historyText}`;
                     emotionHistoryDisplay.classList.remove('hidden');
                     
-                    // Adaptar respuesta del bot según emoción
-                    adaptBotResponse(dominantEmotion, confidence);
+                    // ACTUALIZADO: Las emociones ya NO adaptan la respuesta del bot
+                    // Solo actualizan la emoción actual para contexto
+                    currentEmotion = dominantEmotion;
+                    
                 } else {
                     emotionDisplay.textContent = 'No se detectó rostro';
                 }
             } catch (error) {
                 console.error('Error detectando emociones:', error);
                 emotionDisplay.textContent = 'Error en análisis';
-            }
-        }
-        
-        // Adaptar respuesta del bot según la emoción detectada
-        function adaptBotResponse(emotion, confidence) {
-            currentEmotion = emotion;
-            // Solo adaptar si la confianza es mayor al 60%
-            if (confidence > 0.6) {
-                let response = "";
-                
-                switch(emotion) {
-                    case "happy":
-                        response = "Pareces estar de buen humor hoy. ¿Te gustaría compartir qué te hace sentir así?";
-                        break;
-                    case "sad":
-                        response = "Noto que podrías estar sintiéndote un poco triste. ¿Quieres hablar sobre ello?";
-                        break;
-                    case "angry":
-                        response = "Percibo que podrías estar molesto. ¿Hay algo en particular que te esté molestando?";
-                        break;
-                    case "surprised":
-                        response = "¡Vaya! Pareces sorprendido. ¿Qué ha ocurrido?";
-                        break;
-                    case "fearful":
-                        response = "Noto cierta preocupación en ti. ¿Hay algo que te esté causando ansiedad?";
-                        break;
-                    default:
-                        // No hacer nada para emociones neutrales o con baja confianza
-                        return;
-                }
-                
-                // Agregar mensaje del bot si no hay mensajes recientes
-                const lastMessages = Array.from(chatBody.querySelectorAll('.message')).slice(-3);
-                const hasRecentBotMessage = lastMessages.some(msg => 
-                    msg.classList.contains('bot-message') && 
-                    msg.textContent.includes(response.substring(0, 20))
-                );
-                
-                if (!hasRecentBotMessage) {
-                    addMessageToChat('assistant', response);
-                }
             }
         }
         
@@ -4586,15 +4600,13 @@ async def chat_interactivo():
                 emotionDisplay.classList.remove('hidden');
                 emotionHistoryDisplay.classList.remove('hidden');
                 
-                // Iniciar detección cada 1 segundo (para mejor rendimiento)
                 emotionDetectionInterval = setInterval(detectEmotions, 1000);
-                addMessageToChat('system', 'Análisis de emociones activado. Ahora puedo detectar tus expresiones faciales.');
+                addMessageToChat('system', 'Análisis de emociones activado. Ahora puedo detectar tus expresiones faciales (solo como contexto).');
             } else {
                 toggleEmotionBtn.innerHTML = `<i class="bi bi-emoji-smile"></i>`;
                 emotionDisplay.classList.add('hidden');
                 emotionHistoryDisplay.classList.add('hidden');
                 
-                // Detener detección
                 if (emotionDetectionInterval) {
                     clearInterval(emotionDetectionInterval);
                     emotionDetectionInterval = null;
@@ -4606,7 +4618,6 @@ async def chat_interactivo():
         
         // Inicializar reconocimiento de voz
         function initSpeechRecognition() {
-            // Verificar si el navegador soporta reconocimiento de voz
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
                 addMessageToChat('system', 'Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge para esta función.');
                 toggleSpeechRecognitionBtn.disabled = true;
@@ -4614,16 +4625,13 @@ async def chat_interactivo():
                 return;
             }
             
-            // Crear instancia de reconocimiento de voz
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             speechRecognizer = new SpeechRecognition();
             
-            // Configurar reconocimiento de voz
             speechRecognizer.continuous = true;
             speechRecognizer.interimResults = true;
             speechRecognizer.lang = 'es-ES';
             
-            // Evento para resultados del reconocimiento
             speechRecognizer.onresult = (event) => {
                 let interimTranscript = '';
                 
@@ -4632,33 +4640,29 @@ async def chat_interactivo():
                     if (event.results[i].isFinal) {
                         finalTranscript += transcript;
                         
-                        // Enviar automáticamente cuando se detecta una frase completa
                         if (transcript.trim().length > 0) {
                             sendMessageFromVoice(transcript);
-                            finalTranscript = ''; // Resetear después de enviar
+                            finalTranscript = '';
                         }
                     } else {
                         interimTranscript += transcript;
                     }
                 }
                 
-                // Cambiar animación del avatar cuando se detecta voz
                 if (interimTranscript.length > 0) {
                     setAvatarState('listening');
                 }
             };
             
-            // Manejar errores
             speechRecognizer.onerror = (event) => {
                 console.error('Error en reconocimiento de voz:', event.error);
                 speechStatus.textContent = `Error: ${event.error}`;
                 setTimeout(() => speechStatus.classList.add('hidden'), 2000);
             };
             
-            // Cuando termina el reconocimiento (por pausa)
             speechRecognizer.onend = () => {
                 if (isSpeechRecognitionOn) {
-                    speechRecognizer.start(); // Reiniciar si aún está activo
+                    speechRecognizer.start();
                 }
             };
         }
@@ -4681,7 +4685,7 @@ async def chat_interactivo():
                 }
                 
                 try {
-                    finalTranscript = ''; // Resetear el transcript
+                    finalTranscript = '';
                     speechRecognizer.start();
                     toggleSpeechRecognitionBtn.innerHTML = `<i class="bi bi-mic-fill"></i>`;
                     speechStatus.textContent = "Escuchando...";
@@ -4698,10 +4702,9 @@ async def chat_interactivo():
                 toggleSpeechRecognitionBtn.innerHTML = `<i class="bi bi-mic-mute"></i>`;
                 speechStatus.textContent = "Reconocimiento pausado";
                 setTimeout(() => speechStatus.classList.add('hidden'), 2000);
-                setAvatarState('idle');
+                setAvatarState(isWaitingForUserResponse ? 'waiting' : 'idle');
                 addMessageToChat('system', 'Reconocimiento de voz desactivado.');
                 
-                // Si hay texto no enviado, enviarlo
                 if (finalTranscript.trim().length > 0) {
                     sendMessageFromVoice(finalTranscript);
                     finalTranscript = '';
@@ -4709,29 +4712,31 @@ async def chat_interactivo():
             }
         }
         
+        // Función para enviar mensajes desde voz
         async function sendMessageFromVoice(transcript) {
             if (!transcript || transcript.trim().length === 0) return;
             
-            // Verificar límite de interacciones
             if (checkInteractionLimit()) return;
             
-            // Agregar mensaje del usuario al chat
+            // ACTUALIZADO: Registrar actividad del usuario
+            updateUserActivity();
+            
             addMessageToChat('user', transcript);
             chatHistory.push({role: 'user', content: transcript});
             
-            // Incrementar contador de interacciones
+            // ACTUALIZADO: El usuario ha respondido, dejar de esperar
+            isWaitingForUserResponse = false;
+            hideWaitingIndicator();
+            
             interactionCount++;
             updateInteractionCounter();
             
-            // Cambiar a estado de procesamiento
             setAvatarState('processing');
             
-            // Mostrar indicador de que el bot está escribiendo
             typingIndicator.style.display = 'block';
             chatBody.scrollTop = chatBody.scrollHeight;
             
             try {
-                // Llamar a la API de ChatGPT (usando el mismo endpoint que el chat normal)
                 const response = await fetch('/chat-api', {
                     method: 'POST',
                     headers: {
@@ -4750,27 +4755,29 @@ async def chat_interactivo():
                 const data = await response.json();
                 typingIndicator.style.display = 'none';
                 
-                // Cambiar a estado de habla
                 setAvatarState('speaking');
                 
-                // Agregar respuesta al chat y al historial
                 addMessageToChat('assistant', data.response);
                 chatHistory.push({role: 'assistant', content: data.response});
                 
-                // Verificar si hemos alcanzado el límite después de esta interacción
+                // ACTUALIZADO: Ahora el bot espera respuesta del usuario
+                isWaitingForUserResponse = true;
+                lastBotQuestion = data.response;
+                showWaitingIndicator();
+                setAvatarState('waiting');
+                
                 checkInteractionLimit();
                 
-                // Volver a estado de escucha después de un tiempo
                 setTimeout(() => {
                     if (avatarState === 'speaking') {
-                        setAvatarState(isSpeechRecognitionOn ? 'listening' : 'idle');
+                        setAvatarState('waiting');
                     }
                 }, 3000);
                 
             } catch (error) {
                 console.error('Error al obtener respuesta:', error);
                 typingIndicator.style.display = 'none';
-                setAvatarState('idle');
+                setAvatarState('waiting');
                 
                 const fallbackResponses = [
                     "Lo siento, estoy teniendo dificultades técnicas. ¿Podrías repetir tu último mensaje?",
@@ -4782,7 +4789,10 @@ async def chat_interactivo():
                 addMessageToChat('assistant', fallbackResponse);
                 chatHistory.push({role: 'assistant', content: fallbackResponse});
                 
-                // Verificar si hemos alcanzado el límite después de esta interacción
+                // ACTUALIZADO: También esperar respuesta después de error
+                isWaitingForUserResponse = true;
+                showWaitingIndicator();
+                
                 checkInteractionLimit();
             }
         }
@@ -4790,7 +4800,6 @@ async def chat_interactivo():
         // Inicializar cámara y micrófono
         async function initMedia() {
             try {
-                // Solicitar permisos
                 localStream = await navigator.mediaDevices.getUserMedia({ 
                     video: {
                         width: { ideal: 1280 },
@@ -4804,45 +4813,41 @@ async def chat_interactivo():
                 localVideo.srcObject = localStream;
                 connectionStatus.textContent = "Conectando...";
                 
-                // Configurar controles iniciales
                 toggleVideoBtn.innerHTML = `<i class="bi bi-camera-video"></i>`;
                 toggleEmotionBtn.innerHTML = `<i class="bi bi-emoji-smile"></i>`;
                 toggleSpeechRecognitionBtn.innerHTML = `<i class="bi bi-mic-mute"></i>`;
                 
-                // Iniciar animaciones del avatar
                 setAvatarState('idle');
                 startRandomAvatarAnimations();
                 
-                // Inicializar contador de interacciones
                 updateInteractionCounter();
                 
-                // Cargar modelos de reconocimiento facial
                 await loadModels();
                 
-                // Inicializar reconocimiento de voz (pero no activarlo aún)
                 initSpeechRecognition();
                 
-                // Simular conexión con el bot (en una implementación real usarías WebRTC)
+                // Iniciar sistema de recordatorios
+                setupResponseReminder();
+                
                 setTimeout(() => {
                     connectionStatus.textContent = "Conectado";
                     
-                    // Mensaje de bienvenida del bot
                     addMessageToChat('assistant', 
                         '¡Hola! Soy CimaBot. Estamos conectados por video. ' +
                         'Puedes hablarme directamente (activa el micrófono con el botón verde) ' +
                         'o escribirme en el chat. ¿En qué puedo ayudarte hoy?');
+                    
+                    // ACTUALIZADO: Después del mensaje de bienvenida, esperar respuesta del usuario
+                    isWaitingForUserResponse = true;
+                    showWaitingIndicator();
+                    setAvatarState('waiting');
+                    
                 }, 2000);
                 
             } catch (error) {
                 console.error('Error al acceder a los dispositivos:', error);
-                
-                // Mostrar alerta de permisos
                 permissionAlert.classList.remove('hidden');
-                
-                // Actualizar estado de conexión
                 connectionStatus.textContent = "Permisos denegados";
-                
-                // Mostrar mensaje de error en el chat
                 addMessageToChat('system', 
                     'No se pudo acceder a la cámara o micrófono. ' +
                     'Por favor, otorga los permisos necesarios para continuar.');
@@ -4858,7 +4863,6 @@ async def chat_interactivo():
                     isVideoOn = videoTrack.enabled;
                     toggleVideoBtn.innerHTML = `<i class="bi bi-camera-video${isVideoOn ? '' : '-off'}"></i>`;
                     
-                    // Si el video se apaga, también apagar detección de emociones
                     if (!isVideoOn && isEmotionDetectionOn) {
                         toggleEmotionDetection();
                     }
@@ -4878,35 +4882,36 @@ async def chat_interactivo():
             initMedia();
         });
         
-        // Función para enviar mensajes
+        // Función para enviar mensajes por chat
         async function sendMessage(event) {
             event.preventDefault();
             
-            // Verificar límite de interacciones
             if (checkInteractionLimit()) return;
             
             const message = messageInput.value.trim();
             
             if (!message) return;
             
-            // Agregar mensaje del usuario al chat
+            // ACTUALIZADO: Registrar actividad del usuario
+            updateUserActivity();
+            
             addMessageToChat('user', message);
             chatHistory.push({role: 'user', content: message});
             messageInput.value = '';
             
-            // Incrementar contador de interacciones
+            // ACTUALIZADO: El usuario ha respondido, dejar de esperar
+            isWaitingForUserResponse = false;
+            hideWaitingIndicator();
+            
             interactionCount++;
             updateInteractionCounter();
             
-            // Cambiar a estado de procesamiento
             setAvatarState('processing');
             
-            // Mostrar indicador de que el bot está escribiendo
             typingIndicator.style.display = 'block';
             chatBody.scrollTop = chatBody.scrollHeight;
             
             try {
-                // Llamar a la API de ChatGPT
                 const response = await fetch('/chat-api', {
                     method: 'POST',
                     headers: {
@@ -4914,7 +4919,7 @@ async def chat_interactivo():
                     },
                     body: JSON.stringify({
                         messages: chatHistory,
-                        emotion: currentEmotion // Opcional: pasar emoción detectada
+                        emotion: currentEmotion
                     })
                 });
                 
@@ -4925,29 +4930,30 @@ async def chat_interactivo():
                 const data = await response.json();
                 typingIndicator.style.display = 'none';
                 
-                // Cambiar a estado de habla
                 setAvatarState('speaking');
                 
-                // Agregar respuesta al chat y al historial
                 addMessageToChat('assistant', data.response);
                 chatHistory.push({role: 'assistant', content: data.response});
                 
-                // Verificar si hemos alcanzado el límite después de esta interacción
+                // ACTUALIZADO: Ahora el bot espera respuesta del usuario
+                isWaitingForUserResponse = true;
+                lastBotQuestion = data.response;
+                showWaitingIndicator();
+                setAvatarState('waiting');
+                
                 checkInteractionLimit();
                 
-                // Volver a estado inactivo después de un tiempo
                 setTimeout(() => {
                     if (avatarState === 'speaking') {
-                        setAvatarState('idle');
+                        setAvatarState('waiting');
                     }
                 }, 3000);
                 
             } catch (error) {
                 console.error('Error al obtener respuesta:', error);
                 typingIndicator.style.display = 'none';
-                setAvatarState('idle');
+                setAvatarState('waiting');
                 
-                // Respuesta de respaldo si falla la API
                 const fallbackResponses = [
                     "Lo siento, estoy teniendo dificultades técnicas. ¿Podrías repetir tu última pregunta?",
                     "Parece que hay un problema con mi conexión. Intentemos nuevamente.",
@@ -4958,7 +4964,10 @@ async def chat_interactivo():
                 addMessageToChat('assistant', fallbackResponse);
                 chatHistory.push({role: 'assistant', content: fallbackResponse});
                 
-                // Verificar si hemos alcanzado el límite después de esta interacción
+                // ACTUALIZADO: También esperar respuesta después de error
+                isWaitingForUserResponse = true;
+                showWaitingIndicator();
+                
                 checkInteractionLimit();
             }
         }
@@ -4982,7 +4991,6 @@ async def chat_interactivo():
         
         // Inicializar la aplicación cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', function() {
-            // Verificar si el navegador soporta los APIs necesarios
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 addMessageToChat('system', 
                     'Tu navegador no soporta las características necesarias para el videochat. ' +
@@ -4990,7 +4998,6 @@ async def chat_interactivo():
                 return;
             }
             
-            // Iniciar medios
             initMedia();
         });
     </script>
