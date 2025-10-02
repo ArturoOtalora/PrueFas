@@ -3235,9 +3235,12 @@ def verificar_usuario(
         </html>
         """
 
-    return RedirectResponse(url="/mostrar_pagina", status_code=302)
+    return RedirectResponse(
+            url=f"/mostrar_pagina?tipo_documento={tipo_documento}&numero_identificacion={numero_identificacion}", 
+            status_code=302
+        )
 @app.get("/mostrar_pagina", response_class=HTMLResponse)
-def mostrar_pagina(request: Request):
+def mostrar_pagina(request: Request, tipo_documento: str = None, numero_identificacion: str = None):
     user_type = request.cookies.get("user_type", "invitado")
     
     # Determinar qué opciones mostrar según el tipo de usuario
@@ -3428,7 +3431,7 @@ def mostrar_pagina(request: Request):
                     </div>
                     <div class="form-group">
                         <label for="numero_identificacion">Número de Identificación:</label>
-                        <input type="text" id="numero_identificacion" name="numero_identificacion" required>
+                        <input type="text" id="numero_identificacion" name="numero_identificacion" value="{numero_identificacion}" required>
                     </div>
                     <div class="form-group">
                         <label for="correo">Correo Electrónico:</label>
