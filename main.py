@@ -148,7 +148,8 @@ def guardar_usuario(
 
         conn = get_db_connection()
         cursor = conn.cursor() 
-        
+    
+
         if version == "Resiliencia":
           cursor.execute("SELECT COUNT(*) FROM Usuarios_Resiliencia WHERE numero_identificacion = %s", (numero_identificacion,))
           (existe,) = cursor.fetchone()
@@ -737,13 +738,12 @@ def cuestionario_resiliencia():
     <div class="app-container">
         <header>
             <div class="logo">Análisis Integral de Resiliencia</div>
-            <div class="tagline">Tu evaluación integral de bienestar</div>
         </header>
 
         <div class="introduction">
-            <h2><i class="fas fa-info-circle"></i> Cuestionario de Evaluación de Resiliencia</h2>
+            <h2><i class="fas fa-info-circle"></i> Cuestionario de Resiliencia</h2>
             <p>Este cuestionario está diseñado para medir tu nivel de resiliencia, es decir, tu capacidad para adaptarte y recuperarte ante situaciones adversas. La resiliencia es una habilidad que nos permite enfrentar los desafíos de la vida con fortaleza y flexibilidad.</p>
-            <p>El cuestionario evalúa diferentes dimensiones de tu bienestar que están relacionadas con tu capacidad de resiliencia. Por favor, responde cada pregunta con sinceridad, reflexionando sobre tus experiencias recientes.</p>
+            <p>El cuestionario mide diferentes dimensiones de tu bienestar que están relacionadas con tu capacidad de resiliencia. Por favor, responde cada pregunta con sinceridad, reflexionando sobre tus experiencias recientes.</p>
             <p>No hay respuestas correctas o incorrectas, solo tu experiencia personal. Al finalizar, recibirás un análisis de tus áreas de fortaleza y oportunidades de crecimiento.</p>
         </div>
 
@@ -759,767 +759,742 @@ def cuestionario_resiliencia():
 
         <form id="wellness-form" method="post" action="/guardar_resiliencia">
             <input type="hidden" name="usuario_id" id="usuario_id" value="">
-            
-            <!-- Pregunta 1 -->
-            <div class="question-card" style="animation-delay: 0.1s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-heartbeat"></i> Pregunta 1</div>
-                    <div class="question-category">Bienestar Físico</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">En la última semana, ¿con qué frecuencia realizaste actividad física al menos 30 minutos?</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_1" value="0" class="option-input" required>
-                            <span class="option-label">Nunca</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_1" value="1" class="option-input">
-                            <span class="option-label">1-2 días</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_1" value="2" class="option-input">
-                            <span class="option-label">3-4 días</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_1" value="3" class="option-input">
-                            <span class="option-label">5+ días</span>
-                        </label>
-                    </div>
+                
+                <!-- Pregunta 1 -->
+        <div class="question-card" style="animation-delay: 0.1s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-heartbeat"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">En la última semana, ¿con qué frecuencia realizaste actividad física al menos 30 minutos?</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_1" value="0" class="option-input" required>
+                        <span class="option-label">Nunca</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_1" value="1" class="option-input">
+                        <span class="option-label">1-2 días</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_1" value="2" class="option-input">
+                        <span class="option-label">3-4 días</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_1" value="3" class="option-input">
+                        <span class="option-label">5+ días</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 2 -->
-            <div class="question-card" style="animation-delay: 0.2s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-heartbeat"></i> Pregunta 2</div>
-                    <div class="question-category">Bienestar Físico</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">¿Cómo calificarías tu nivel de energía física en los últimos 7 días?</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_2" value="0" class="option-input" required>
-                            <span class="option-label">Muy bajo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_2" value="1" class="option-input">
-                            <span class="option-label">Bajo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_2" value="2" class="option-input">
-                            <span class="option-label">Medio</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_2" value="3" class="option-input">
-                            <span class="option-label">Alto</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_2" value="4" class="option-input">
-                            <span class="option-label">Muy alto</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 2 -->
+        <div class="question-card" style="animation-delay: 0.2s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-heartbeat"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">¿Cómo calificarías tu nivel de energía física en los últimos 7 días?</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_2" value="0" class="option-input" required>
+                        <span class="option-label">Muy bajo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_2" value="1" class="option-input">
+                        <span class="option-label">Bajo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_2" value="2" class="option-input">
+                        <span class="option-label">Medio</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_2" value="3" class="option-input">
+                        <span class="option-label">Alto</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_2" value="4" class="option-input">
+                        <span class="option-label">Muy alto</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 3 -->
-            <div class="question-card" style="animation-delay: 0.3s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-heartbeat"></i> Pregunta 3</div>
-                    <div class="question-category">Bienestar Físico</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">En el último mes, ¿qué tan satisfecho/a estás con tu calidad de sueño?</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_3" value="0" class="option-input" required>
-                            <span class="option-label">Nada satisfecho/a</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_3" value="1" class="option-input">
-                            <span class="option-label">Poco satisfecho/a</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_3" value="2" class="option-input">
-                            <span class="option-label">Neutral</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_3" value="3" class="option-input">
-                            <span class="option-label">Satisfecho/a</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_3" value="4" class="option-input">
-                            <span class="option-label">Muy satisfecho/a</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 3 -->
+        <div class="question-card" style="animation-delay: 0.3s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-heartbeat"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">En el último mes, ¿qué tan satisfecho/a estás con tu calidad de sueño?</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_3" value="0" class="option-input" required>
+                        <span class="option-label">Nada satisfecho/a</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_3" value="1" class="option-input">
+                        <span class="option-label">Poco satisfecho/a</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_3" value="2" class="option-input">
+                        <span class="option-label">Neutral</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_3" value="3" class="option-input">
+                        <span class="option-label">Satisfecho/a</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_3" value="4" class="option-input">
+                        <span class="option-label">Muy satisfecho/a</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 4 -->
-            <div class="question-card" style="animation-delay: 0.4s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-smile"></i> Pregunta 4</div>
-                    <div class="question-category">Bienestar Emocional</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">En general, me siento satisfecho/a con mi vida.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_4" value="0" class="option-input" required>
-                            <span class="option-label">Totalmente en desacuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_4" value="1" class="option-input">
-                            <span class="option-label">En desacuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_4" value="2" class="option-input">
-                            <span class="option-label">Neutral</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_4" value="3" class="option-input">
-                            <span class="option-label">De acuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_4" value="4" class="option-input">
-                            <span class="option-label">Muy de acuerdo</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 4 -->
+        <div class="question-card" style="animation-delay: 0.4s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-smile"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">En general, me siento satisfecho/a con mi vida.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_4" value="0" class="option-input" required>
+                        <span class="option-label">Totalmente en desacuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_4" value="1" class="option-input">
+                        <span class="option-label">En desacuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_4" value="2" class="option-input">
+                        <span class="option-label">Neutral</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_4" value="3" class="option-input">
+                        <span class="option-label">De acuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_4" value="4" class="option-input">
+                        <span class="option-label">Muy de acuerdo</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 5 -->
-            <div class="question-card" style="animation-delay: 0.5s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-smile"></i> Pregunta 5</div>
-                    <div class="question-category">Bienestar Emocional</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">He sentido alegría y entusiasmo en mi día a día.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_5" value="0" class="option-input" required>
-                            <span class="option-label">Nunca</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_5" value="1" class="option-input">
-                            <span class="option-label">Pocas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_5" value="2" class="option-input">
-                            <span class="option-label">Algunas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_5" value="3" class="option-input">
-                            <span class="option-label">Muchas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_5" value="4" class="option-input">
-                            <span class="option-label">Siempre</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 5 -->
+        <div class="question-card" style="animation-delay: 0.5s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-smile"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">He sentido alegría y entusiasmo en mi día a día.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_5" value="0" class="option-input" required>
+                        <span class="option-label">Nunca</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_5" value="1" class="option-input">
+                        <span class="option-label">Pocas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_5" value="2" class="option-input">
+                        <span class="option-label">Algunas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_5" value="3" class="option-input">
+                        <span class="option-label">Muchas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_5" value="4" class="option-input">
+                        <span class="option-label">Siempre</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 6 -->
-            <div class="question-card" style="animation-delay: 0.6s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-smile"></i> Pregunta 6</div>
-                    <div class="question-category">Bienestar Emocional</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">He sentido estrés o preocupación excesiva.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_6" value="0" class="option-input" required>
-                            <span class="option-label">Nunca</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_6" value="1" class="option-input">
-                            <span class="option-label">Pocas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_6" value="2" class="option-input">
-                            <span class="option-label">Algunas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_6" value="3" class="option-input">
-                            <span class="option-label">Muchas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_6" value="4" class="option-input">
-                            <span class="option-label">Siempre</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 6 -->
+        <div class="question-card" style="animation-delay: 0.6s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-smile"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">He sentido estrés o preocupación excesiva.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_6" value="0" class="option-input" required>
+                        <span class="option-label">Nunca</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_6" value="1" class="option-input">
+                        <span class="option-label">Pocas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_6" value="2" class="option-input">
+                        <span class="option-label">Algunas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_6" value="3" class="option-input">
+                        <span class="option-label">Muchas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_6" value="4" class="option-input">
+                        <span class="option-label">Siempre</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 7 -->
-            <div class="question-card" style="animation-delay: 0.7s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-brain"></i> Pregunta 7</div>
-                    <div class="question-category">Bienestar Mental</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">En los últimos 14 días, me he sentido útil y capaz de enfrentar dificultades.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_7" value="0" class="option-input" required>
-                            <span class="option-label">Nunca</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_7" value="1" class="option-input">
-                            <span class="option-label">Pocas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_7" value="2" class="option-input">
-                            <span class="option-label">Algunas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_7" value="3" class="option-input">
-                            <span class="option-label">Muchas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_7" value="4" class="option-input">
-                            <span class="option-label">Siempre</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 7 -->
+        <div class="question-card" style="animation-delay: 0.7s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-brain"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">En los últimos 14 días, me he sentido útil y capaz de enfrentar dificultades.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_7" value="0" class="option-input" required>
+                        <span class="option-label">Nunca</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_7" value="1" class="option-input">
+                        <span class="option-label">Pocas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_7" value="2" class="option-input">
+                        <span class="option-label">Algunas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_7" value="3" class="option-input">
+                        <span class="option-label">Muchas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_7" value="4" class="option-input">
+                        <span class="option-label">Siempre</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 8 -->
-            <div class="question-card" style="animation-delay: 0.8s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-brain"></i> Pregunta 8</div>
-                    <div class="question-category">Bienestar Mental</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">En los últimos 14 días, me he sentido triste o deprimido/a.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_8" value="0" class="option-input" required>
-                            <span class="option-label">Nunca</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_8" value="1" class="option-input">
-                            <span class="option-label">Pocas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_8" value="2" class="option-input">
-                            <span class="option-label">Algunas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_8" value="3" class="option-input">
-                            <span class="option-label">Muchas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_8" value="4" class="option-input">
-                            <span class="option-label">Siempre</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 8 -->
+        <div class="question-card" style="animation-delay: 0.8s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-brain"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">En los últimos 14 días, me he sentido triste o deprimido/a.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_8" value="0" class="option-input" required>
+                        <span class="option-label">Nunca</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_8" value="1" class="option-input">
+                        <span class="option-label">Pocas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_8" value="2" class="option-input">
+                        <span class="option-label">Algunas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_8" value="3" class="option-input">
+                        <span class="option-label">Muchas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_8" value="4" class="option-input">
+                        <span class="option-label">Siempre</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 9 -->
-            <div class="question-card" style="animation-delay: 0.9s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-brain"></i> Pregunta 9</div>
-                    <div class="question-category">Bienestar Mental</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">En los últimos 14 días, me he sentido nervioso/a o con ansiedad.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_9" value="0" class="option-input" required>
-                            <span class="option-label">Nunca</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_9" value="1" class="option-input">
-                            <span class="option-label">Pocas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_9" value="2" class="option-input">
-                            <span class="option-label">Algunas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_9" value="3" class="option-input">
-                            <span class="option-label">Muchas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_9" value="4" class="option-input">
-                            <span class="option-label">Siempre</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 9 -->
+        <div class="question-card" style="animation-delay: 0.9s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-brain"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">En los últimos 14 días, me he sentido nervioso/a o con ansiedad.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_9" value="0" class="option-input" required>
+                        <span class="option-label">Nunca</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_9" value="1" class="option-input">
+                        <span class="option-label">Pocas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_9" value="2" class="option-input">
+                        <span class="option-label">Algunas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_9" value="3" class="option-input">
+                        <span class="option-label">Muchas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_9" value="4" class="option-input">
+                        <span class="option-label">Siempre</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 10 -->
-            <div class="question-card" style="animation-delay: 1.0s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-search"></i> Pregunta 10</div>
-                    <div class="question-category">Bienestar Existencial</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">Siento que mi vida tiene un propósito claro.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_10" value="0" class="option-input" required>
-                            <span class="option-label">Totalmente en desacuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_10" value="1" class="option-input">
-                            <span class="option-label">En desacuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_10" value="2" class="option-input">
-                            <span class="option-label">Neutral</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_10" value="3" class="option-input">
-                            <span class="option-label">De acuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_10" value="4" class="option-input">
-                            <span class="option-label">Muy de acuerdo</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 10 -->
+        <div class="question-card" style="animation-delay: 1.0s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-search"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">Siento que mi vida tiene un propósito claro.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_10" value="0" class="option-input" required>
+                        <span class="option-label">Totalmente en desacuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_10" value="1" class="option-input">
+                        <span class="option-label">En desacuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_10" value="2" class="option-input">
+                        <span class="option-label">Neutral</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_10" value="3" class="option-input">
+                        <span class="option-label">De acuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_10" value="4" class="option-input">
+                        <span class="option-label">Muy de acuerdo</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 11 -->
-            <div class="question-card" style="animation-delay: 1.1s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-search"></i> Pregunta 11</div>
-                    <div class="question-category">Bienestar Existencial</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">Tengo metas que le dan sentido a lo que hago cada día.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_11" value="0" class="option-input" required>
-                            <span class="option-label">Nada de acuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_11" value="1" class="option-input">
-                            <span class="option-label">Poco de acuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_11" value="2" class="option-input">
-                            <span class="option-label">Neutral</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_11" value="3" class="option-input">
-                            <span class="option-label">De acuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_11" value="4" class="option-input">
-                            <span class="option-label">Muy de acuerdo</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 11 -->
+        <div class="question-card" style="animation-delay: 1.1s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-search"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">Tengo metas que le dan sentido a lo que hago cada día.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_11" value="0" class="option-input" required>
+                        <span class="option-label">Nada de acuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_11" value="1" class="option-input">
+                        <span class="option-label">Poco de acuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_11" value="2" class="option-input">
+                        <span class="option-label">Neutral</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_11" value="3" class="option-input">
+                        <span class="option-label">De acuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_11" value="4" class="option-input">
+                        <span class="option-label">Muy de acuerdo</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 12 -->
-            <div class="question-card" style="animation-delay: 1.2s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-search"></i> Pregunta 12</div>
-                    <div class="question-category">Bienestar Existencial</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">A veces siento que mi vida carece de dirección.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_12" value="0" class="option-input" required>
-                            <span class="option-label">Muy de acuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_12" value="1" class="option-input">
-                            <span class="option-label">De acuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_12" value="2" class="option-input">
-                            <span class="option-label">Neutral</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_12" value="3" class="option-input">
-                            <span class="option-label">En desacuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_12" value="4" class="option-input">
-                            <span class="option-label">Muy en desacuerdo</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 12 -->
+        <div class="question-card" style="animation-delay: 1.2s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-search"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">A veces siento que mi vida carece de dirección.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_12" value="0" class="option-input" required>
+                        <span class="option-label">Muy de acuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_12" value="1" class="option-input">
+                        <span class="option-label">De acuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_12" value="2" class="option-input">
+                        <span class="option-label">Neutral</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_12" value="3" class="option-input">
+                        <span class="option-label">En desacuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_12" value="4" class="option-input">
+                        <span class="option-label">Muy en desacuerdo</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 13 -->
-            <div class="question-card" style="animation-delay: 1.3s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-dollar-sign"></i> Pregunta 13</div>
-                    <div class="question-category">Bienestar Financiero</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">En el último mes, ¿con qué frecuencia te preocupaste por no tener suficiente dinero para cubrir tus gastos básicos?</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_13" value="0" class="option-input" required>
-                            <span class="option-label">Nunca</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_13" value="1" class="option-input">
-                            <span class="option-label">Pocas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_13" value="2" class="option-input">
-                            <span class="option-label">Algunas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_13" value="3" class="option-input">
-                            <span class="option-label">Muchas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_13" value="4" class="option-input">
-                            <span class="option-label">Siempre</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 13 -->
+        <div class="question-card" style="animation-delay: 1.3s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-dollar-sign"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">En el último mes, ¿con qué frecuencia te preocupaste por no tener suficiente dinero para cubrir tus gastos básicos?</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_13" value="0" class="option-input" required>
+                        <span class="option-label">Nunca</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_13" value="1" class="option-input">
+                        <span class="option-label">Pocas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_13" value="2" class="option-input">
+                        <span class="option-label">Algunas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_13" value="3" class="option-input">
+                        <span class="option-label">Muchas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_13" value="4" class="option-input">
+                        <span class="option-label">Siempre</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 14 -->
-            <div class="question-card" style="animation-delay: 1.4s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-dollar-sign"></i> Pregunta 14</div>
-                    <div class="question-category">Bienestar Financiero</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">Actualmente, ¿sientes que puedes manejar bien tu dinero?</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_14" value="0" class="option-input" required>
-                            <span class="option-label">Nada</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_14" value="1" class="option-input">
-                            <span class="option-label">Poco</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_14" value="2" class="option-input">
-                            <span class="option-label">Regular</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_14" value="3" class="option-input">
-                            <span class="option-label">Bien</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_14" value="4" class="option-input">
-                            <span class="option-label">Muy bien</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 14 -->
+        <div class="question-card" style="animation-delay: 1.4s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-dollar-sign"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">Actualmente, ¿sientes que puedes manejar bien tu dinero?</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_14" value="0" class="option-input" required>
+                        <span class="option-label">Nada</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_14" value="1" class="option-input">
+                        <span class="option-label">Poco</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_14" value="2" class="option-input">
+                        <span class="option-label">Regular</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_14" value="3" class="option-input">
+                        <span class="option-label">Bien</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_14" value="4" class="option-input">
+                        <span class="option-label">Muy bien</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 15 -->
-            <div class="question-card" style="animation-delay: 1.5s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-dollar-sign"></i> Pregunta 15</div>
-                    <div class="question-category">Bienestar Financiero</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">Si surgiera una emergencia, ¿podrías contar con recursos para afrontarla?</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_15" value="0" class="option-input" required>
-                            <span class="option-label">No podría en absoluto</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_15" value="1" class="option-input">
-                            <span class="option-label">Difícilmente</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_15" value="2" class="option-input">
-                            <span class="option-label">Posiblemente</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_15" value="3" class="option-input">
-                            <span class="option-label">Sí</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_15" value="4" class="option-input">
-                            <span class="option-label">Totalmente sí</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 15 -->
+        <div class="question-card" style="animation-delay: 1.5s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-dollar-sign"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">Si surgiera una emergencia, ¿podrías contar con recursos para afrontarla?</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_15" value="0" class="option-input" required>
+                        <span class="option-label">No podría en absoluto</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_15" value="1" class="option-input">
+                        <span class="option-label">Difícilmente</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_15" value="2" class="option-input">
+                        <span class="option-label">Posiblemente</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_15" value="3" class="option-input">
+                        <span class="option-label">Sí</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_15" value="4" class="option-input">
+                        <span class="option-label">Totalmente sí</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 16 -->
-            <div class="question-card" style="animation-delay: 1.6s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-leaf"></i> Pregunta 16</div>
-                    <div class="question-category">Bienestar Ambiental</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">Mi barrio o comunidad es un lugar limpio y saludable.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_16" value="0" class="option-input" required>
-                            <span class="option-label">Muy en desacuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_16" value="1" class="option-input">
-                            <span class="option-label">En desacuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_16" value="2" class="option-input">
-                            <span class="option-label">Neutral</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_16" value="3" class="option-input">
-                            <span class="option-label">De acuerdo</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_16" value="4" class="option-input">
-                            <span class="option-label">Muy de acuerdo</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 16 -->
+        <div class="question-card" style="animation-delay: 1.6s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-leaf"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">Mi barrio o comunidad es un lugar limpio y saludable.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_16" value="0" class="option-input" required>
+                        <span class="option-label">Muy en desacuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_16" value="1" class="option-input">
+                        <span class="option-label">En desacuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_16" value="2" class="option-input">
+                        <span class="option-label">Neutral</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_16" value="3" class="option-input">
+                        <span class="option-label">De acuerdo</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_16" value="4" class="option-input">
+                        <span class="option-label">Muy de acuerdo</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 17 -->
-            <div class="question-card" style="animation-delay: 1.7s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-leaf"></i> Pregunta 17</div>
-                    <div class="question-category">Bienestar Ambiental</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">Tengo acceso a parques o espacios verdes donde puedo relajarme.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_17" value="0" class="option-input" required>
-                            <span class="option-label">Nunca</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_17" value="1" class="option-input">
-                            <span class="option-label">Pocas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_17" value="2" class="option-input">
-                            <span class="option-label">Algunas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_17" value="3" class="option-input">
-                            <span class="option-label">Muchas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_17" value="4" class="option-input">
-                            <span class="option-label">Siempre</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 17 -->
+        <div class="question-card" style="animation-delay: 1.7s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-leaf"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">Tengo acceso a parques o espacios verdes donde puedo relajarme.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_17" value="0" class="option-input" required>
+                        <span class="option-label">Nunca</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_17" value="1" class="option-input">
+                        <span class="option-label">Pocas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_17" value="2" class="option-input">
+                        <span class="option-label">Algunas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_17" value="3" class="option-input">
+                        <span class="option-label">Muchas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_17" value="4" class="option-input">
+                        <span class="option-label">Siempre</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 18 -->
-            <div class="question-card" style="animation-delay: 1.8s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-leaf"></i> Pregunta 18</div>
-                    <div class="question-category">Bienestar Ambiental</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">Me siento seguro/a en el lugar donde vivo.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_18" value="0" class="option-input" required>
-                            <span class="option-label">Nada seguro/a</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_18" value="1" class="option-input">
-                            <span class="option-label">Poco seguro/a</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_18" value="2" class="option-input">
-                            <span class="option-label">Neutral</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_18" value="3" class="option-input">
-                            <span class="option-label">Seguro/a</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_18" value="4" class="option-input">
-                            <span class="option-label">Muy seguro/a</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 18 -->
+        <div class="question-card" style="animation-delay: 1.8s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-leaf"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">Me siento seguro/a en el lugar donde vivo.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_18" value="0" class="option-input" required>
+                        <span class="option-label">Nada seguro/a</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_18" value="1" class="option-input">
+                        <span class="option-label">Poco seguro/a</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_18" value="2" class="option-input">
+                        <span class="option-label">Neutral</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_18" value="3" class="option-input">
+                        <span class="option-label">Seguro/a</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_18" value="4" class="option-input">
+                        <span class="option-label">Muy seguro/a</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 19 -->
-            <div class="question-card" style="animation-delay: 1.9s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-users"></i> Pregunta 19</div>
-                    <div class="question-category">Bienestar Social</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">Puedo contar con mi familia cuando necesito apoyo.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_19" value="0" class="option-input" required>
-                            <span class="option-label">Nunca</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_19" value="1" class="option-input">
-                            <span class="option-label">Pocas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_19" value="2" class="option-input">
-                            <span class="option-label">Algunas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_19" value="3" class="option-input">
-                            <span class="option-label">Muchas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_19" value="4" class="option-input">
-                            <span class="option-label">Siempre</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 19 -->
+        <div class="question-card" style="animation-delay: 1.9s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-users"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">Puedo contar con mi familia cuando necesito apoyo.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_19" value="0" class="option-input" required>
+                        <span class="option-label">Nunca</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_19" value="1" class="option-input">
+                        <span class="option-label">Pocas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_19" value="2" class="option-input">
+                        <span class="option-label">Algunas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_19" value="3" class="option-input">
+                        <span class="option-label">Muchas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_19" value="4" class="option-input">
+                        <span class="option-label">Siempre</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 20 -->
-            <div class="question-card" style="animation-delay: 2.0s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-users"></i> Pregunta 20</div>
-                    <div class="question-category">Bienestar Social</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">Tengo amistades o personas cercanas en quienes confío.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_20" value="0" class="option-input" required>
-                            <span class="option-label">Nunca</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_20" value="1" class="option-input">
-                            <span class="option-label">Pocas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_20" value="2" class="option-input">
-                            <span class="option-label">Algunas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_20" value="3" class="option-input">
-                            <span class="option-label">Muchas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_20" value="4" class="option-input">
-                            <span class="option-label">Siempre</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 20 -->
+        <div class="question-card" style="animation-delay: 2.0s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-users"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">Tengo amistades o personas cercanas en quienes confío.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_20" value="0" class="option-input" required>
+                        <span class="option-label">Nunca</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_20" value="1" class="option-input">
+                        <span class="option-label">Pocas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_20" value="2" class="option-input">
+                        <span class="option-label">Algunas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_20" value="3" class="option-input">
+                        <span class="option-label">Muchas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_20" value="4" class="option-input">
+                        <span class="option-label">Siempre</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 21 -->
-            <div class="question-card" style="animation-delay: 2.1s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-users"></i> Pregunta 21</div>
-                    <div class="question-category">Bienestar Social</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">Participo en actividades comunitarias, culturales o deportivas.</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_21" value="0" class="option-input" required>
-                            <span class="option-label">Nunca</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_21" value="1" class="option-input">
-                            <span class="option-label">Pocas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_21" value="2" class="option-input">
-                            <span class="option-label">Algunas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_21" value="3" class="option-input">
-                            <span class="option-label">Muchas veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_21" value="4" class="option-input">
-                            <span class="option-label">Siempre</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 21 -->
+        <div class="question-card" style="animation-delay: 2.1s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-users"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">Participo en actividades comunitarias, culturales o deportivas.</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_21" value="0" class="option-input" required>
+                        <span class="option-label">Nunca</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_21" value="1" class="option-input">
+                        <span class="option-label">Pocas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_21" value="2" class="option-input">
+                        <span class="option-label">Algunas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_21" value="3" class="option-input">
+                        <span class="option-label">Muchas veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_21" value="4" class="option-input">
+                        <span class="option-label">Siempre</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 22 -->
-            <div class="question-card" style="animation-delay: 2.2s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-exclamation-triangle"></i> Pregunta 22</div>
-                    <div class="question-category">Factores de Riesgo</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">¿Has consumido alcohol en el último mes?</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_22" value="0" class="option-input" required>
-                            <span class="option-label">Nunca</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_22" value="1" class="option-input">
-                            <span class="option-label">1-2 veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_22" value="2" class="option-input">
-                            <span class="option-label">3-4 veces</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_22" value="3" class="option-input">
-                            <span class="option-label">5+ veces</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 22 -->
+        <div class="question-card" style="animation-delay: 2.2s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-exclamation-triangle"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">¿Has consumido alcohol en el último mes?</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_22" value="0" class="option-input" required>
+                        <span class="option-label">Nunca</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_22" value="1" class="option-input">
+                        <span class="option-label">1-2 veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_22" value="2" class="option-input">
+                        <span class="option-label">3-4 veces</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_22" value="3" class="option-input">
+                        <span class="option-label">5+ veces</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 23 -->
-            <div class="question-card" style="animation-delay: 2.3s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-exclamation-triangle"></i> Pregunta 23</div>
-                    <div class="question-category">Factores de Riesgo</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">¿Has consumido alguna otra Sustancias psicoactivas (marihuana, cocaína, etc.) en el último mes?</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_23" value="0" class="option-input" required>
-                            <span class="option-label">Sí</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_23" value="1" class="option-input">
-                            <span class="option-label">No</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 23 -->
+        <div class="question-card" style="animation-delay: 2.3s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-exclamation-triangle"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">¿Has consumido alguna otra Sustancias psicoactivas (marihuana, cocaína, etc.) en el último mes?</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_23" value="0" class="option-input" required>
+                        <span class="option-label">Sí</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_23" value="1" class="option-input">
+                        <span class="option-label">No</span>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Pregunta 24 -->
-            <div class="question-card" style="animation-delay: 2.4s">
-                <div class="question-header">
-                    <div class="question-number"><i class="fas fa-exclamation-triangle"></i> Pregunta 24</div>
-                    <div class="question-category">Factores de Riesgo</div>
-                </div>
-                <div class="question-body">
-                    <div class="question-text required">¿En el último año has estado expuesto/a a situaciones de violencia (familiar, comunitaria, de pareja)?</div>
-                    <div class="options-grid">
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_24" value="0" class="option-input" required>
-                            <span class="option-label">Sí</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="pregunta_24" value="1" class="option-input">
-                            <span class="option-label">No</span>
-                        </label>
-                    </div>
+        <!-- Pregunta 24 -->
+        <div class="question-card" style="animation-delay: 2.4s">
+            <div class="question-header">
+                <div class="question-number"><i class="fas fa-exclamation-triangle"></i></div>
+            </div>
+            <div class="question-body">
+                <div class="question-text required">¿En el último año has estado expuesto/a a situaciones de violencia (familiar, comunitaria, de pareja)?</div>
+                <div class="options-grid">
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_24" value="0" class="option-input" required>
+                        <span class="option-label">Sí</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="pregunta_24" value="1" class="option-input">
+                        <span class="option-label">No</span>
+                    </label>
                 </div>
             </div>
-
+        </div>
             <div class="navigation">
                 <button type="button" class="btn btn-outline" id="scroll-top-btn">
                     <i class="fas fa-arrow-up"></i> Volver arriba
@@ -1545,11 +1520,11 @@ def cuestionario_resiliencia():
                 <div class="modal-title">Análisis Integral de Resiliencia</div>
             </div>
             <div class="modal-body">
-                <p>Este cuestionario está diseñado para evaluar diferentes aspectos de tu bienestar. Tus respuestas nos ayudarán a comprender mejor tus necesidades y a proporcionarte recomendaciones personalizadas.</p>
+                <p>Este cuestionario está diseñado para medir diferentes aspectos de tu bienestar. Tus respuestas nos ayudarán a comprender mejor tus necesidades y a proporcionarte recomendaciones personalizadas.</p>
                 <p>Por favor, responde cada pregunta con sinceridad. No hay respuestas correctas o incorrectas, solo tu experiencia personal.</p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" onclick="closeModal()">Comenzar evaluación</button>
+                <button class="btn btn-primary" onclick="closeModal()">Comenzar</button>
             </div>
         </div>
     </div>
@@ -1853,7 +1828,7 @@ def guardar_resiliencia(
         <body>
             <div class="container">
                 <h1>¡Gracias por responder el cuestionario!</h1>
-                <p>Tu información ha sido guardada exitosamente. Pronto recibirás un análisis detallado.</p>
+                <p>Tu información ha sido guardada exitosamente.</p>
             </div>
         </body>
     </html>
@@ -2176,7 +2151,7 @@ def admin_panel():
                     <i class="fas fa-shield-alt"></i>
                     <div>
                         <div>Panel de Administración</div>
-                        <div style="font-size: 0.9rem; color: var(--gray); font-weight: normal;">Sistema de Evaluación de Resiliencia</div>
+                        <div style="font-size: 0.9rem; color: var(--gray); font-weight: normal;">Sistema de Resiliencia</div>
                     </div>
                 </div>
                 <div class="header-actions">
