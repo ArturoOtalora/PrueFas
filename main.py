@@ -59,7 +59,7 @@ def backup_statics():
 app.mount("/statics", StaticFiles(directory="statics"), name="statics")
 
 preguntas_lista_Premium = [
-    "¿Consideras que tu alimentación te nutre lo suficientemente bien?", "¿Realizas ejercicio físico al menos tres veces por semana?", "¿Sientes que tus habito de sueño te dan el descanso necesario?",
+    "¿Consideras que tu alimentación te nutre lo suficientemente bien?", "¿Realizas ejercicio físico al menos tres veces por semana?", "¿Sientes que tus habitos de sueño te dan el descanso necesario?",
     "¿En los últimos seis meses te has realizado chequeos médicos?", "¿Piensas que los hábitos que hoy ocupan gran parte de tu tiempo te ayudan para tener un cuerpo más saludable?",
     "¿Consideras que tus experiencias han contribuido a tu calidad de vida o crecimiento personal?", "¿Celebras tus logros o victorias?",
     "¿Cuando siento una emoción intensa, soy capaz de calmarme antes de actuar o tomar decisiones?", "¿Sientes que te adaptas a cambios o nuevas situaciones con facilidad?",
@@ -86,7 +86,7 @@ preguntas_lista_Premium = [
     "¿Qué tan conectado(a) te sientes con la vida, la naturaleza o algo más allá de ti mismo(a)?"
 ]
 preguntas_lista = [
-    "¿Consideras que tu alimentación te nutre lo suficientemente bien?", "¿Realizas ejercicio físico al menos tres veces por semana?", "¿Sientes que tus habito de sueño te dan el descanso necesario?",
+    "¿Consideras que tu alimentación te nutre lo suficientemente bien?", "¿Realizas ejercicio físico al menos tres veces por semana?", "¿Sientes que tus habitos de sueño te dan el descanso necesario?",
     "¿En los últimos seis meses te has realizado chequeos médicos?", "¿Piensas que los hábitos que hoy ocupan gran parte de tu tiempo te ayudan para tener un cuerpo más saludable?",
     "¿Consideras que tus experiencias han contribuido a tu calidad de vida o crecimiento personal?", "¿Celebras tus logros o victorias?",
     "¿Cuando siento una emoción intensa, soy capaz de calmarme antes de actuar o tomar decisiones?", "¿Sientes que te adaptas a cambios o nuevas situaciones con facilidad?",
@@ -759,7 +759,7 @@ def cuestionario_resiliencia():
 
         <form id="wellness-form" method="post" action="/guardar_resiliencia">
             <input type="hidden" name="usuario_id" id="usuario_id" value="">
-                
+
                 <!-- Pregunta 1 -->
         <div class="question-card" style="animation-delay: 0.1s">
             <div class="question-header">
@@ -4032,18 +4032,18 @@ async def chat_interactivo():
             font-size: 12px;
             z-index: 10;
         }
-        .emotion-history {
-            position: absolute;
-            bottom: 70px;
-            left: 10px;
-            background-color: rgba(0,0,0,0.5);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            z-index: 10;
-            max-width: 80%;
-        }
+        # .emotion-history {
+        #     position: absolute;
+        #     bottom: 70px;
+        #     left: 10px;
+        #     background-color: rgba(0,0,0,0.5);
+        #     color: white;
+        #     padding: 5px 10px;
+        #     border-radius: 20px;
+        #     font-size: 12px;
+        #     z-index: 10;
+        #     max-width: 80%;
+        # }
         .speech-recognition-status {
             position: absolute;
             top: 10px;
@@ -4168,17 +4168,17 @@ async def chat_interactivo():
             text-align: center;
             margin: 15px 0;
         }
-        .interaction-counter {
-            position: absolute;
-            top: 10px;
-            right: 120px;
-            background-color: rgba(0,0,0,0.5);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            z-index: 10;
-        }
+        # .interaction-counter {
+        #     position: absolute;
+        #     top: 10px;
+        #     right: 120px;
+        #     background-color: rgba(0,0,0,0.5);
+        #     color: white;
+        #     padding: 5px 10px;
+        #     border-radius: 20px;
+        #     font-size: 12px;
+        #     z-index: 10;
+        # }
         .disabled-chat {
             opacity: 0.6;
             pointer-events: none;
@@ -5404,7 +5404,7 @@ def mostrar_preguntas(usuario_id: int, pagina: int = Query(1, alias="pagina")):
     contador = 0
     comentarios_texto = {
         0: "¿Qué prácticas alimenticias sientes que más te nutren y cuáles quisieras mejorar?",
-        1: "¿Qué obstáculos personales o del entorno dificultan que realices ejercicio con regularidad??",
+        1: "¿Qué obstáculos personales o del entorno dificultan que realices ejercicio con regularidad o te motivan para cumplir tu rutina de ejercicio?",
         2: "¿Qué factores te impiden descansar mejor por las noches?",
         3: "¿Qué te motiva o te detiene a hacerte chequeos médicos preventivos?",
         4: "¿Con qué frecuencia experimentas síntomas físicos relacionados con el agotamiento, como dolores de cabeza, tensión muscular, insomnio o enfermedades frecuentes?",
@@ -5420,7 +5420,7 @@ def mostrar_preguntas(usuario_id: int, pagina: int = Query(1, alias="pagina")):
         14: "¿Qué situaciones te hacen sentir valorado, y cuáles no?",
         15: "¿Qué palabras usarías para describir tu versión más auténtica?",
         16: "¿Qué impacto positivo crees que generas en las personas o en tu entorno?",
-        17: "¿Qué actividad o propósito te hace sentir que tu vida tiene dirección?",
+        17: "¿Qué actividad o propósito te hace sentir que tu vida tiene dirección o sentido?",
         18: "¿Qué pensamientos frecuentes sientes que te limitan y cuáles te impulsan?",
         19: "¿Puedes compartir una verdad difícil que hayas integrado y cómo lo hiciste?",
         20: "¿Qué emociones sientes cuando logras ahorrar o cuando no puedes hacerlo?",
@@ -5910,7 +5910,7 @@ def mostrar_preguntas3(usuario_id: int, pagina: int = Query(1, alias="pagina")):
     contador = 0
     comentarios_texto = {
         0: "¿Qué prácticas alimenticias sientes que más te nutren y cuáles quisieras mejorar?",
-        1: "¿Qué obstáculos personales o del entorno dificultan que realices ejercicio con regularidad??",
+        1: "¿Qué obstáculos personales o del entorno dificultan que realices ejercicio con regularidad o te motivan para cumplir tu rutina de ejercicio ?",
         2: "¿Qué factores te impiden descansar mejor por las noches?",
         3: "¿Qué te motiva o te detiene a hacerte chequeos médicos preventivos?",
         4: "¿Con qué frecuencia experimentas síntomas físicos relacionados con el agotamiento, como dolores de cabeza, tensión muscular, insomnio o enfermedades frecuentes?",
@@ -5926,7 +5926,7 @@ def mostrar_preguntas3(usuario_id: int, pagina: int = Query(1, alias="pagina")):
         14: "¿Qué situaciones te hacen sentir valorado, y cuáles no?",
         15: "¿Qué palabras usarías para describir tu versión más auténtica?",
         16: "¿Qué impacto positivo crees que generas en las personas o en tu entorno?",
-        17: "¿Qué actividad o propósito te hace sentir que tu vida tiene dirección?",
+        17: "¿Qué actividad o propósito te hace sentir que tu vida tiene dirección o sentido?",
         18: "¿Qué pensamientos frecuentes sientes que te limitan y cuáles te impulsan?",
         19: "¿Puedes compartir una verdad difícil que hayas integrado y cómo lo hiciste?",
         20: "¿Qué emociones sientes cuando logras ahorrar o cuando no puedes hacerlo?",
