@@ -2918,7 +2918,15 @@ def mostrar_pagina1(request: Request):
                     <option value="CE">Cédula de Extranjería</option>
                 </select>
                 <label for="numero_identificacion">Número de Identificación</label>
-                <input type="text" id="numero_identificacion" name="numero_identificacion" placeholder="Ingresa tu número" required>
+                <input 
+            type="text" 
+            id="numero_identificacion" 
+            name="numero_identificacion" 
+            placeholder="Ingresa tu número" 
+            required
+            inputmode="numeric"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+            >
                 <button type="submit">Continuar</button>
             </form>
         </div>
@@ -3430,8 +3438,15 @@ def mostrar_pagina(request: Request, tipo_documento: str = None, numero_identifi
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="numero_identificacion">Número de Identificación:</label>
-                        <input type="text" id="numero_identificacion" name="numero_identificacion" value="{numero_identificacion}" required>
+                    <label for="numero_identificacion">Número de Identificación:</label>
+                    <input 
+                        type="text" 
+                        id="numero_identificacion" 
+                        name="numero_identificacion" 
+                        value="{ numero_identificacion }" 
+                        readonly
+                        required
+                    >
                     </div>
                     <div class="form-group">
                         <label for="correo">Correo Electrónico:</label>
